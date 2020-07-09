@@ -8,3 +8,6 @@ edition = "2018"
 
 [dependencies]
 "postgres" = "0.17.4"
+
+[dev-dependencies]
+mockall = "0.7.1"

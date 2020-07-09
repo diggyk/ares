@@ -6,7 +6,7 @@ use super::edge::EdgeType;
 
 #[derive(Debug)]
 pub struct GridCell {
-    pub id: u32,
+    pub id: i32,
     pub coords: Coords,
     pub edge0: EdgeType,
     pub edge60: EdgeType,
@@ -17,9 +17,9 @@ pub struct GridCell {
 }
 
 impl GridCell {
-    pub fn new(coords: &Coords) -> GridCell {
+    pub fn new(id: i32, coords: &Coords) -> GridCell {
         GridCell {
-            id: 0,
+            id: id,
             coords: Coords{..*coords},
             edge0: EdgeType::Wall,
             edge60: EdgeType::Wall,
@@ -46,7 +46,8 @@ impl Grid {
 
         let mut cells: HashMap<Coords, GridCell> = HashMap::new();
         let root_coords = Coords {q: 0, r: 0};
-        let root_cell = GridCell::new(&root_coords);
+        let mut cell_count = 0;
+        let root_cell = GridCell::new(cell_count, &root_coords);
 
         cells.insert(Coords {q: 0, r: 0}, root_cell);
 
@@ -60,7 +61,8 @@ impl Grid {
                 let dir: Dir = (angle as i32).into();
                 for _ in 0..radius {
                     coords = coords.to(&dir, 1);
-                    let cell = GridCell::new(&coords);
+                    cell_count += 1;
+                    let cell = GridCell::new(cell_count, &coords);
                     cells.insert(coords.clone(), cell);
                 }
             }
