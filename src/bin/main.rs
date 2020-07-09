@@ -1,4 +1,7 @@
+use ares::grid::Grid;
+
 fn main() {
-    println!("Hello, world!");
-    let coord = ares::grid::utils::Coords { q: 0, r: 0 }; 
+    let grid = Grid::new(2).unwrap();
+    
+    println!("Cells: {}", grid.cells.len())
 }
