@@ -39,7 +39,10 @@ impl DbClient {
             &String::from("Failed to connect to DB")
         );
     
-        let stmt = client.prepare("INSERT INTO gridcells(id, q, r) VALUES ($1, $2, $3)").expect(
+        let stmt = client.prepare(
+            "INSERT INTO gridcells(id, q, r, edge0, edge60, edge120, edge180, edge240, edge300) \
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)"
+        ).expect(
             &String::from("Failed to prepare statement")
         );
     
@@ -47,9 +50,16 @@ impl DbClient {
         let total = cells.len();
     
         for (coords, cell) in cells {
+            let edge0: i16 = cell.edge0.clone().into();
+            let edge60: i16 = cell.edge60.clone().into();
+            let edge120: i16 = cell.edge120.clone().into();
+            let edge180: i16 = cell.edge180.clone().into();
+            let edge240: i16 = cell.edge240.clone().into();
+            let edge300: i16 = cell.edge300.clone().into();
+
             if let Err(error) = client.execute(
                 &stmt,
-                &[&cell.id, &coords.q, &coords.r], 
+                &[&cell.id, &coords.q, &coords.r, &edge0, &edge60, &edge120, &edge180, &edge240, &edge300], 
             ) {
                 println!("Failed to insert grid cell: {:?}", error);
             }

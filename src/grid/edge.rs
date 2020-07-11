@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum EdgeType {
     Open,
     Wall,
@@ -16,6 +16,15 @@ impl From<i32> for EdgeType {
 
 impl From<EdgeType> for i32 {
     fn from(item: EdgeType) -> i32 {
+        match item {
+            EdgeType::Open => 0,
+            EdgeType::Wall => 1,
+        }
+    }
+}
+
+impl From<EdgeType> for i16 {
+    fn from(item: EdgeType) -> i16 {
         match item {
             EdgeType::Open => 0,
             EdgeType::Wall => 1,

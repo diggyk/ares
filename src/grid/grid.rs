@@ -1,3 +1,4 @@
+use rand::Rng;
 use std::collections::HashMap;
 
 use super::coords::Coords;
@@ -18,15 +19,23 @@ pub struct GridCell {
 
 impl GridCell {
     pub fn new(id: i32, coords: &Coords) -> GridCell {
+        let mut rng = rand::thread_rng();
+        let e0: i32 = rng.gen_range(0,2);
+        let e1: i32 = rng.gen_range(0,2);
+        let e2: i32 = rng.gen_range(0,2);
+        let e3: i32 = rng.gen_range(0,2);
+        let e4: i32 = rng.gen_range(0,2);
+        let e5: i32 = rng.gen_range(0,2);
+        
         GridCell {
             id: id,
             coords: Coords{..*coords},
-            edge0: EdgeType::Wall,
-            edge60: EdgeType::Wall,
-            edge120: EdgeType::Wall,
-            edge180: EdgeType::Wall,
-            edge240: EdgeType::Wall,
-            edge300: EdgeType::Wall,
+            edge0: e0.into(),
+            edge60: e1.into(),
+            edge120: e2.into(),
+            edge180: e3.into(),
+            edge240: e4.into(),
+            edge300: e5.into(),
         }
     }
 }

@@ -25,6 +25,7 @@ dependencies = [
  "clap",
  "mockall",
  "postgres",
+ "rand",
 ]
 
 [[package]]
