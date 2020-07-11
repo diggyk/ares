@@ -67,7 +67,7 @@ impl Coords {
     }
 
     pub fn to_cube(&self) -> CoordsKind {
-        CoordsKind::Cube{x: self.q, z: self.r, y: 0 - self.q - self.r}
+        CoordsKind::Cube{x: self.q, y: self.r, z: 0 - self.q - self.r}
     }
 
     pub fn to(&self, dir: &Dir, dist: i32) -> Coords {
@@ -75,18 +75,18 @@ impl Coords {
         let mut r = self.r;
 
         match dir {
-            Dir::Orient0 => r -= dist,
-            Dir::Orient60 => {
+            Dir::Orient0 => r += dist,
+            Dir::Orient60 => q += dist,
+            Dir::Orient120 => {
                 q += dist;
                 r -= dist;
             },
-            Dir::Orient120 => q += dist,
-            Dir::Orient180 => r += dist,
-            Dir::Orient240 => {
+            Dir::Orient180 => r -= dist,
+            Dir::Orient240 => q -= dist,
+            Dir::Orient300 => {
                 q -= dist;
                 r += dist;
-            },
-            Dir::Orient300 => q -= dist,
+            }
         }
 
         Coords{q, r}
@@ -108,15 +108,15 @@ fn convert_to_cube() {
     let coords = Coords {q: -2, r: 0};
     if let CoordsKind::Cube {x, y, z} = coords.to_cube() {
         assert_eq!(x, -2);
-        assert_eq!(y, 2);
-        assert_eq!(z, 0);
+        assert_eq!(y, 0);
+        assert_eq!(z, 2);
     }
 
     let coords = Coords {q: 1, r: 1};
     if let CoordsKind::Cube {x, y, z} = coords.to_cube() {
         assert_eq!(x, 1);
-        assert_eq!(y, -2);
-        assert_eq!(z, 1);
+        assert_eq!(y, 1);
+        assert_eq!(z, -2);
     }
 }
 
@@ -131,10 +131,10 @@ fn test_to() {
     let coords5 = coords.to(&Dir::Orient240, 2);
     let coords6 = coords.to(&Dir::Orient300, 32);
 
-    assert_eq!(coords1, Coords{q: 0, r: -5});
-    assert_eq!(coords2, Coords{q: 24, r: -24});
-    assert_eq!(coords3, Coords{q: 4, r: 0});
-    assert_eq!(coords4, Coords{q: 0, r: 934});
-    assert_eq!(coords5, Coords{q: -2, r: 2});
-    assert_eq!(coords6, Coords{q: -32, r: 0});
+    assert_eq!(coords1, Coords{q: 0, r: 5});
+    assert_eq!(coords2, Coords{q: 24, r: 0});
+    assert_eq!(coords3, Coords{q: 4, r: -4});
+    assert_eq!(coords4, Coords{q: 0, r: -934});
+    assert_eq!(coords5, Coords{q: -2, r: 0});
+    assert_eq!(coords6, Coords{q: -32, r: 32});
 }
