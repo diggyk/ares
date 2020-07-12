@@ -14,6 +14,16 @@ impl From<i32> for EdgeType {
     }
 }
 
+impl From<i16> for EdgeType {
+    fn from(item: i16) -> EdgeType {
+        if item == 0 {
+            EdgeType::Open
+        } else {
+            EdgeType::Wall
+        }
+    }
+}
+
 impl From<EdgeType> for i32 {
     fn from(item: EdgeType) -> i32 {
         match item {

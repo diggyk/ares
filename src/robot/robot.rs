@@ -23,6 +23,12 @@ impl<'a> Robot<'a> {
 
     pub fn attach_db(&mut self, dbclient: &'a DbClient) {
         self.dbclient = Some(dbclient);
+
+        self.register();
+    }
+
+    fn register(&self) {
+        
     }
 }
 

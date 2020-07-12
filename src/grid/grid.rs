@@ -19,23 +19,46 @@ pub struct GridCell {
 
 impl GridCell {
     pub fn new(id: i32, coords: &Coords) -> GridCell {
-        let mut rng = rand::thread_rng();
-        let e0: i32 = rng.gen_range(0,2);
-        let e1: i32 = rng.gen_range(0,2);
-        let e2: i32 = rng.gen_range(0,2);
-        let e3: i32 = rng.gen_range(0,2);
-        let e4: i32 = rng.gen_range(0,2);
-        let e5: i32 = rng.gen_range(0,2);
-        
         GridCell {
             id: id,
             coords: Coords{..*coords},
-            edge0: e0.into(),
-            edge60: e1.into(),
-            edge120: e2.into(),
-            edge180: e3.into(),
-            edge240: e4.into(),
-            edge300: e5.into(),
+            // edge0: EdgeType::Wall,
+            // edge60: EdgeType::Wall,
+            // edge120: EdgeType::Wall,
+            // edge180: EdgeType::Wall,
+            // edge240: EdgeType::Wall,
+            // edge300: EdgeType::Wall,
+            edge0: EdgeType::Open,
+            edge60: EdgeType::Open,
+            edge120: EdgeType::Open,
+            edge180: EdgeType::Open,
+            edge240: EdgeType::Open,
+            edge300: EdgeType::Open,
+        }
+    }
+}
+
+impl From<postgres::Row> for GridCell {
+    fn from(item: postgres::Row) -> GridCell {
+        let id: i32 = item.get(0);
+        let q: i32 = item.get(1);
+        let r: i32 = item.get(2);
+        let coords = Coords{q, r};
+        let e0: i16 = item.get(3);
+        let e60: i16 = item.get(4);
+        let e120: i16 = item.get(5);
+        let e180: i16 = item.get(6);
+        let e240: i16 = item.get(7);
+        let e300: i16 = item.get(8);
+        let edge0: EdgeType = e0.into();
+        let edge60: EdgeType = e60.into();
+        let edge120: EdgeType = e120.into();
+        let edge180: EdgeType = e180.into();
+        let edge240: EdgeType = e240.into();
+        let edge300: EdgeType = e300.into();
+
+        GridCell {
+            id, coords, edge0, edge60, edge120, edge180, edge240, edge300,
         }
     }
 }
@@ -68,10 +91,28 @@ impl Grid {
             for angle in (0..360).step_by(60) {
                 // note we never step to angle 360 b/c that's where we started
                 let dir: Dir = (angle as i32).into();
-                for _ in 0..radius {
+                for num in 0..radius {
                     coords = coords.to(&dir, 1);
                     cell_count += 1;
-                    let cell = GridCell::new(cell_count, &coords);
+                    let mut cell = GridCell::new(cell_count, &coords);
+
+                    // let mut rng = rand::thread_rng();
+                    // let e0: i32 = rng.gen_range(0,2);
+                    // let e1: i32 = rng.gen_range(0,2);
+                    // let e2: i32 = rng.gen_range(0,2);
+                    // let e3: i32 = rng.gen_range(0,2);
+                    // let e4: i32 = rng.gen_range(0,2);
+                    // let e5: i32 = rng.gen_range(0,2);
+                    // cell.edge0 = e0.into();
+                    // cell.edge60 = e1.into();
+                    // cell.edge120 = e2.into();
+                    // cell.edge180 = e3.into();
+                    // cell.edge240 = e4.into();
+                    // cell.edge300 = e5.into();
+
+                    if radius == size as i32 {
+                        Grid::enforce_wall(&mut cell, &dir, num == radius - 1);
+                    }
                     cells.insert(coords.clone(), cell);
                 }
             }
@@ -82,6 +123,47 @@ impl Grid {
                 cells: cells,
             }
         )
+    }
+
+    fn enforce_wall(cell: &mut GridCell, dir: &Dir, last: bool){
+        match dir {
+            Dir::Orient0 => {
+                if last { cell.edge0 = EdgeType::Wall }
+                cell.edge240 = EdgeType::Wall;
+                cell.edge300 = EdgeType::Wall;
+            },
+            Dir::Orient60 => {
+                if last { cell.edge60 = EdgeType::Wall }
+                cell.edge300 = EdgeType::Wall;
+                cell.edge0 = EdgeType::Wall;
+            },
+            Dir::Orient120 => {
+                if last { cell.edge120 = EdgeType::Wall }
+                cell.edge0 = EdgeType::Wall;
+                cell.edge60 = EdgeType::Wall;
+            },
+            Dir::Orient180 => {
+                if last { cell.edge180 = EdgeType::Wall }
+                cell.edge60 = EdgeType::Wall;
+                cell.edge120 = EdgeType::Wall;
+            },
+            Dir::Orient240 => {
+                if last { cell.edge240 = EdgeType::Wall }
+                cell.edge120 = EdgeType::Wall;
+                cell.edge180 = EdgeType::Wall;
+            },
+            Dir::Orient300 => {
+                if last { cell.edge300 = EdgeType::Wall }
+                cell.edge180 = EdgeType::Wall;
+                cell.edge240 = EdgeType::Wall;
+            }
+        }
+    }
+}
+
+impl From<HashMap<Coords, GridCell>> for Grid {
+    fn from(items: HashMap<Coords, GridCell>) -> Grid {
+        Grid {cells: items}
     }
 }
 

@@ -70,4 +70,26 @@ impl DbClient {
             }
         }
     }
+
+    pub fn get_all_cells(&self) -> HashMap<Coords, GridCell> {
+        let connstr = format!("postgresql://{}:{}@{}/{}", self.user, self.pw, self.host, self.db);
+        let mut client = Client::connect(&connstr, NoTls).expect(
+            &String::from("Failed to connect to DB")
+        );
+
+        let mut cells: HashMap<Coords, GridCell> = HashMap::new();
+
+        let results = client.query(
+            "SELECT id, q, r, edge0, edge60, edge120, edge180, edge240, edge300 from gridcells", &[],
+        );
+
+        if let Ok(results) = results {
+            for result in results {
+                let cell: GridCell = result.into();
+                let coords = cell.coords.clone();
+                cells.insert(coords, cell);
+            }
+        }
+        cells
+    }
 }
