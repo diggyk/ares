@@ -36,6 +36,15 @@ impl GridCell {
             edge300: EdgeType::Open,
         }
     }
+
+    pub fn is_open(&self) -> bool {
+        self.edge0 != EdgeType::Wall
+        || self.edge60 != EdgeType::Wall
+        || self.edge120 != EdgeType::Wall
+        || self.edge180 != EdgeType::Wall
+        || self.edge240 != EdgeType::Wall
+        || self.edge300 != EdgeType::Wall
+    }
 }
 
 impl From<postgres::Row> for GridCell {
@@ -64,10 +73,11 @@ impl From<postgres::Row> for GridCell {
 }
 
 
-
 #[derive(Debug)]
 pub struct Grid {
     pub cells: HashMap<Coords, GridCell>,
+
+    less_than_guess: Option<i32>,
 }
 
 impl Grid {
@@ -96,20 +106,6 @@ impl Grid {
                     cell_count += 1;
                     let mut cell = GridCell::new(cell_count, &coords);
 
-                    // let mut rng = rand::thread_rng();
-                    // let e0: i32 = rng.gen_range(0,2);
-                    // let e1: i32 = rng.gen_range(0,2);
-                    // let e2: i32 = rng.gen_range(0,2);
-                    // let e3: i32 = rng.gen_range(0,2);
-                    // let e4: i32 = rng.gen_range(0,2);
-                    // let e5: i32 = rng.gen_range(0,2);
-                    // cell.edge0 = e0.into();
-                    // cell.edge60 = e1.into();
-                    // cell.edge120 = e2.into();
-                    // cell.edge180 = e3.into();
-                    // cell.edge240 = e4.into();
-                    // cell.edge300 = e5.into();
-
                     if radius == size as i32 {
                         Grid::enforce_wall(&mut cell, &dir, num == radius - 1);
                     }
@@ -121,6 +117,7 @@ impl Grid {
         Ok(
             Grid {
                 cells: cells,
+                less_than_guess: Some(5000),
             }
         )
     }
@@ -159,11 +156,33 @@ impl Grid {
             }
         }
     }
+
+    pub fn get_random_open_cell(&mut self) -> &GridCell {
+        let mut rng = rand::thread_rng();
+        let mut found_coords: Option<Coords> = None;
+        while let None = found_coords {
+            let max_range = self.less_than_guess.unwrap_or(5000);
+            let q: i32 = rng.gen_range(max_range * -1, max_range);
+            let r: i32 = rng.gen_range(max_range * -1, max_range);
+
+            let test_coords = Coords{q,r};
+
+            if self.cells.contains_key(&test_coords) {
+                if self.cells.get(&test_coords).unwrap().is_open() {
+                    found_coords = Some(test_coords);
+                }
+            } else {
+                self.less_than_guess = std::cmp::max(Some(q.abs()), Some(r.abs()));
+            }
+        }
+
+        self.cells.get(&found_coords.unwrap()).unwrap()
+    }
 }
 
 impl From<HashMap<Coords, GridCell>> for Grid {
     fn from(items: HashMap<Coords, GridCell>) -> Grid {
-        Grid {cells: items}
+        Grid {cells: items, less_than_guess: None}
     }
 }
 

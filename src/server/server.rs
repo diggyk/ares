@@ -26,7 +26,7 @@ impl<'a> Server<'a> {
         Server { config, db, grid, robots }
     }
 
-    pub fn run(&self) {
+    pub fn run(&mut self) {
         let shutdown = false;
 
         ctrlc::set_handler(move || {
@@ -34,6 +34,8 @@ impl<'a> Server<'a> {
             std::process::exit(0);
         })
         .expect("Error setting Ctrl-C handler");
+
+        self.grid.get_random_open_cell();
 
         while !shutdown {
             std::thread::sleep(std::time::Duration::from_secs(10));

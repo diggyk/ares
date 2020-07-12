@@ -100,7 +100,25 @@ impl DbClient {
         cells
     }
 
-    pub fn create_robot(&self, robot: &mut Robot) {
+    pub fn create_robot(&mut self, robot: &mut Robot) -> Result<(), String> {
+        if let None = self.client {
+            self.connect();
+        }
 
+        let client = self.client.as_mut().unwrap();
+        let orientation: i16 = robot.orientation.clone().into();
+        let results = client.query(
+            "INSERT INTO robots(name, q, r, orientation) VALUES ($1, $2, $3, $4) RETURNING id",
+            &[&robot.name, &robot.coords.q, &robot.coords.r, &orientation]
+        );
+
+        if let Ok(results) = results {
+            for result in results {
+                robot.id = result.get(0);
+            }
+            Ok(())
+        } else {
+            Err(String::from("Could not insert"))
+        }
     }
 }

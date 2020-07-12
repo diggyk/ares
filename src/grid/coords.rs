@@ -6,7 +6,7 @@ pub enum CoordsKind {
     Cube {x: i32, y: i32, z: i32},
 }
 
-#[derive(PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Dir {
     Orient0,
     Orient60,
@@ -42,6 +42,33 @@ impl From<Dir> for i32 {
         }
     }
 }
+
+impl From<i16> for Dir {
+    fn from(item: i16) -> Dir {
+        match item {
+            0 => Dir::Orient0,
+            60 => Dir::Orient60,
+            120 => Dir::Orient120,
+            180 => Dir::Orient180,
+            240 => Dir::Orient240,
+            300 => Dir::Orient300,
+            _ => Dir::Orient0,
+        }
+    } 
+ }
+ 
+ impl From<Dir> for i16 {
+     fn from(item: Dir) -> i16 {
+         match item {
+             Dir::Orient0 => 0,
+             Dir::Orient60 => 60,
+             Dir::Orient120 => 120,
+             Dir::Orient180 => 180,
+             Dir::Orient240 => 240,
+             Dir::Orient300 => 300,
+         }
+     }
+ }
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct Coords {

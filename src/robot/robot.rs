@@ -1,3 +1,4 @@
+use crate::utils;
 use crate::db::DbClient;
 use crate::grid::*;
 
@@ -5,6 +6,8 @@ pub struct Robot<'a> {
     dbclient: Option<&'a DbClient>,
 
     pub id: u32,
+    pub name: String,
+
     pub coords: Coords,
     pub orientation: Dir,
     pub known: Vec<GridCell>,
@@ -15,6 +18,7 @@ impl<'a> Robot<'a> {
         Robot {
             dbclient: None,
             id: 0,
+            name: utils::random_string(8),
             coords,
             orientation,
             known: Vec::new(),
