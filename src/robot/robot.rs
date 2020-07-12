@@ -2,10 +2,11 @@ use crate::utils;
 use crate::db::DbClient;
 use crate::grid::*;
 
+#[derive(Debug)]
 pub struct Robot<'a> {
     dbclient: Option<&'a DbClient>,
 
-    pub id: u32,
+    pub id: i64,
     pub name: String,
 
     pub coords: Coords,

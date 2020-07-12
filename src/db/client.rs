@@ -1,16 +1,20 @@
 use postgres::{Client, NoTls, Error};
 use std::collections::HashMap;
+use derivative::Derivative;
 
 use crate::grid::Coords;
 use crate::grid::GridCell;
 use crate::robot::Robot;
 
+#[derive(Derivative)]
+#[derivative(Debug)]
 pub struct DbClient {
     user: String,
     pw: String,
     host: String,
     db: String,
 
+    #[derivative(Debug="ignore")]
     client: Option<postgres::Client>,
 }
 

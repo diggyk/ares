@@ -15,6 +15,9 @@ pub struct GridCell {
     pub edge180: EdgeType,
     pub edge240: EdgeType,
     pub edge300: EdgeType,
+
+    pub robots: Vec<i64>,
+    pub valuables: Vec<i64>,
 }
 
 impl GridCell {
@@ -34,6 +37,8 @@ impl GridCell {
             edge180: EdgeType::Open,
             edge240: EdgeType::Open,
             edge300: EdgeType::Open,
+            robots: Vec::new(),
+            valuables: Vec::new(),
         }
     }
 
@@ -68,6 +73,8 @@ impl From<postgres::Row> for GridCell {
 
         GridCell {
             id, coords, edge0, edge60, edge120, edge180, edge240, edge300,
+            robots: Vec::new(),
+            valuables: Vec::new(),
         }
     }
 }

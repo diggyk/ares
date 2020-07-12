@@ -1,15 +1,18 @@
+use std::collections::HashMap;
+use std::time::SystemTime;
+
 use crate::db::DbClient;
 use crate::grid::Grid;
 use crate::robot::Robot;
 use super::ServerConfig;
-
-use std::collections::HashMap;
 
 pub struct Server<'a> {
     config: ServerConfig,
     db: DbClient,
     grid: Grid,
     robots: HashMap<i64, Robot<'a>>,
+
+    shutdown: bool,
 }
 
 impl<'a> Server<'a> {
@@ -23,23 +26,24 @@ impl<'a> Server<'a> {
         let grid: Grid = db.get_all_cells().into();
         let robots = HashMap::new();
 
-        Server { config, db, grid, robots }
+        Server { config, db, grid, robots, shutdown: false }
     }
 
     pub fn run(&mut self) {
-        let shutdown = false;
+        let mut last_tick = SystemTime::now();
+        while !self.shutdown {
+            if self.robots.len() < self.config.max_bots {
 
-        ctrlc::set_handler(move || {
-            println!("Signal for shutdown");
-            std::process::exit(0);
-        })
-        .expect("Error setting Ctrl-C handler");
-
-        self.grid.get_random_open_cell();
-
-        while !shutdown {
-            std::thread::sleep(std::time::Duration::from_secs(10));
-            println!("Still alive");
+            }
+            if let Ok(elapse) = last_tick.elapsed() {
+                let sleep_time = std::time::Duration::from_secs(1) - elapse;
+                std::thread::sleep(sleep_time);
+                last_tick = SystemTime::now();
+            } else {
+                std::thread::sleep(std::time::Duration::from_secs(1));
+                last_tick = SystemTime::now();
+            }
+            println!("Tick!");
         }
     }
 }
