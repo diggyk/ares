@@ -3,13 +3,15 @@ use std::collections::HashMap;
 
 use crate::grid::Coords;
 use crate::grid::GridCell;
+use crate::robot::Robot;
 
-#[derive(Debug)]
 pub struct DbClient {
     user: String,
     pw: String,
     host: String,
     db: String,
+
+    client: Option<postgres::Client>,
 }
 
 impl DbClient {
@@ -19,27 +21,33 @@ impl DbClient {
             pw: pw.to_string(),
             host: host.to_string(),
             db: db.to_string(),
+            client: None,
         }
     }
 
-    pub fn drop_all_cells(&self) {
-        /* Drops all the cells from the DB */
+    fn connect(&mut self) {
         let connstr = format!("postgresql://{}:{}@{}/{}", self.user, self.pw, self.host, self.db);
-        let mut client = Client::connect(&connstr, NoTls).expect(
+        let client = Client::connect(&connstr, NoTls).expect(
             &String::from("Failed to connect to DB")
         );
-    
-        client.execute("TRUNCATE gridcells", &[]).expect(&String::from("Could not truncate gridcells"));
+        self.client = Some(client);
+    }
+
+    pub fn drop_all_cells(&mut self) {
+        /* Drops all the cells from the DB */
+        if let None = self.client {
+            self.connect();
+        }
+        self.client.as_mut().unwrap().execute("TRUNCATE gridcells", &[]).expect(&String::from("Could not truncate gridcells"));
     }
     
-    pub fn create_cells(&self, cells: &HashMap<Coords, GridCell>) {
+    pub fn create_cells(&mut self, cells: &HashMap<Coords, GridCell>) {
         /* Create's the cells given in the gridcell table */
-        let connstr = format!("postgresql://{}:{}@{}/{}", self.user, self.pw, self.host, self.db);
-        let mut client = Client::connect(&connstr, NoTls).expect(
-            &String::from("Failed to connect to DB")
-        );
+        if let None = self.client {
+            self.connect();
+        }
     
-        let stmt = client.prepare(
+        let stmt = self.client.as_mut().unwrap().prepare(
             "INSERT INTO gridcells(id, q, r, edge0, edge60, edge120, edge180, edge240, edge300) \
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)"
         ).expect(
@@ -57,7 +65,7 @@ impl DbClient {
             let edge240: i16 = cell.edge240.clone().into();
             let edge300: i16 = cell.edge300.clone().into();
 
-            if let Err(error) = client.execute(
+            if let Err(error) = self.client.as_mut().unwrap().execute(
                 &stmt,
                 &[&cell.id, &coords.q, &coords.r, &edge0, &edge60, &edge120, &edge180, &edge240, &edge300], 
             ) {
@@ -71,15 +79,14 @@ impl DbClient {
         }
     }
 
-    pub fn get_all_cells(&self) -> HashMap<Coords, GridCell> {
-        let connstr = format!("postgresql://{}:{}@{}/{}", self.user, self.pw, self.host, self.db);
-        let mut client = Client::connect(&connstr, NoTls).expect(
-            &String::from("Failed to connect to DB")
-        );
+    pub fn get_all_cells(&mut self) -> HashMap<Coords, GridCell> {
+        if let None = self.client {
+            self.connect();
+        }
 
         let mut cells: HashMap<Coords, GridCell> = HashMap::new();
 
-        let results = client.query(
+        let results = self.client.as_mut().unwrap().query(
             "SELECT id, q, r, edge0, edge60, edge120, edge180, edge240, edge300 from gridcells", &[],
         );
 
@@ -91,5 +98,9 @@ impl DbClient {
             }
         }
         cells
+    }
+
+    pub fn create_robot(&self, robot: &mut Robot) {
+
     }
 }

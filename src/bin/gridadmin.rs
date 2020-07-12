@@ -41,7 +41,7 @@ fn main() {
     let size = matches.value_of("size").unwrap_or("100");
     let size = size.parse::<u32>().expect("Could not parse size");
 
-    let dbclient = DbClient::new(dbuser, dbpw, dbhost, dbname);
+    let mut dbclient = DbClient::new(dbuser, dbpw, dbhost, dbname);
     
     let grid = Grid::new(size).unwrap();
     dbclient.drop_all_cells();

@@ -14,7 +14,7 @@ pub struct Server<'a> {
 
 impl<'a> Server<'a> {
     pub fn new(config: ServerConfig) -> Server<'a> {
-        let db: DbClient = DbClient::new(
+        let mut db: DbClient = DbClient::new(
             &config.dbuser, 
             &config.dbpw, 
             &config.dbhost, 
