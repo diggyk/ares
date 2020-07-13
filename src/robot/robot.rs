@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
 
@@ -41,6 +42,7 @@ pub struct RobotKnownCell {
 }
 
 pub struct Robot {
+    pub grid: Arc<Mutex<Grid>>,
     pub data: RobotData,
     pub known_cells: Vec<RobotKnownCell>,
     pub active_process: Option<Processes>,
@@ -48,13 +50,14 @@ pub struct Robot {
 
 impl Robot {
     /// Load all the robots out of the database
-    pub fn load_all(conn: &PgConnection) -> HashMap<i64, Robot> {
+    pub fn load_all(conn: &PgConnection, grid: Arc<Mutex<Grid>>) -> HashMap<i64, Robot> {
         let mut _robots = HashMap::new();
         let results = robots::table.load::<RobotData>(conn).expect("Failed to load robots");
         
         for result in results {
             let id = result.id;
             let mut robot = Robot {
+                grid: grid.clone(),
                 data: result,
                 known_cells: Vec::new(),
                 active_process: None,
@@ -72,7 +75,7 @@ impl Robot {
     }
 
     /// Create a new robot at the specified coordinates with the specified orientation
-    pub fn new(coords: Coords, orientation: Dir, conn: Option<&PgConnection>) -> Robot {
+    pub fn new(coords: Coords, orientation: Dir, conn: Option<&PgConnection>, grid: Arc<Mutex<Grid>>) -> Robot {
         let new_robot = NewRobot {
             name: utils::random_string(8),
             q: coords.q,
@@ -101,6 +104,7 @@ impl Robot {
         }
 
         Robot {
+            grid,
             data: _robot,
             known_cells: Vec::new(),
             active_process: None,
@@ -122,17 +126,4 @@ impl Robot {
 
         println!("{:?}", result);
     }
-}
-
-#[cfg(test)]
-#[test]
-fn basic_robot_new() {
-    let coords = Coords{ q: -2, r: 5};
-    let dir = Dir::Orient120;
-
-    let robot = Robot::new(coords, dir, None);
-
-    assert_eq!(robot.data.q, -2);
-    assert_eq!(robot.data.r, 5);
-    assert_eq!(robot.data.orientation, Dir::Orient120);
 }

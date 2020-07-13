@@ -220,6 +220,7 @@ impl Grid {
 
         // add our current cell
         if let Some(cell) = self.cells.get(&start_coords) {
+            println!("Adding: {}, {}", start_coords.q, start_coords.r);
             found_cells.push(cell);
         }
 
@@ -231,14 +232,17 @@ impl Grid {
             let mut scan_dir = start_arm_dir.right(60);
 
             if let Some(cell) = self.cells.get(&coord) {
+                println!("Adding start for r {}: {}, {}", r, coord.q, coord.r);
                 found_cells.push(cell);
             }
 
             for _ in (0..fov).step_by(60) {
                 scan_dir = scan_dir.right(60);
-                for _ in 1..r {
+                println!("Turn to {:?}", scan_dir);
+                for _ in 1..r+1 {
                     coord = coord.to(&scan_dir, 1);
                     if let Some(cell) = self.cells.get(&coord) {
+                        println!("Adding: {}, {}", coord.q, coord.r);
                         found_cells.push(cell);
                     }
                 }

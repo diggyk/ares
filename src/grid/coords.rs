@@ -140,7 +140,7 @@ impl Dir {
         let a1: i32 = self.clone().into();
         let mut a1 = a1 + angle;
 
-        if a1 < 360 {
+        if a1 > 360 {
             a1 = a1 - 360;
         }
 

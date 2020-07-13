@@ -3,7 +3,7 @@ CREATE TABLE public.robot_known_cells
     robot_id bigint NOT NULL,
     gridcell_id integer NOT NULL,
     discovery_time timestamp without time zone NOT NULL,
-    PRIMARY KEY (robot_id),
+    PRIMARY KEY (robot_id, gridcell_id),
     CONSTRAINT gridcell_id_key FOREIGN KEY (gridcell_id)
         REFERENCES public.gridcells (id) MATCH SIMPLE
         ON UPDATE NO ACTION

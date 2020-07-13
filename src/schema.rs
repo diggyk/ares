@@ -13,7 +13,7 @@ table! {
 }
 
 table! {
-    robot_known_cells (robot_id) {
+    robot_known_cells (robot_id, gridcell_id) {
         robot_id -> Int8,
         gridcell_id -> Int4,
         discovery_time -> Timestamp,
