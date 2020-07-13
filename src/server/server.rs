@@ -53,6 +53,13 @@ impl Server {
             if self.robots.len() < self.config.max_bots {
                 self.spawn_robot();
             }
+
+            for (id, robot) in &mut self.robots {
+                println!("Tick robot: {}", id);
+                robot.tick(&self.config.conn);
+            }
+
+            // Wait for remained of the tick time
             if let Ok(elapse) = last_tick.elapsed() {
                 let sleep_time = std::time::Duration::from_secs(1) - elapse;
                 std::thread::sleep(sleep_time);

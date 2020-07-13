@@ -5,6 +5,7 @@ use diesel::pg::PgConnection;
 use crate::utils;
 use crate::grid::*;
 use crate::schema::robots;
+use super::process::*;
 
 #[derive(Debug, Queryable, Insertable)]
 #[table_name="robots"]
@@ -33,9 +34,11 @@ pub struct RobotData {
 
 pub struct Robot {
     pub data: RobotData,
+    pub active_process: Option<Processes>,
 }
 
 impl Robot {
+    /// Load all the robots out of the database
     pub fn load_all(conn: &PgConnection) -> HashMap<i64, Robot> {
         let mut _robots = HashMap::new();
         let results = robots::table.load::<RobotData>(conn).expect("Failed to load robots");
@@ -43,11 +46,14 @@ impl Robot {
         for result in results {
             _robots.insert(result.id, Robot {
                 data: result,
+                active_process: None,
             });
         }
 
         _robots
     }
+
+    /// Create a new robot at the specified coordinates with the specified orientation
     pub fn new(coords: Coords, orientation: Dir, conn: Option<&PgConnection>) -> Robot {
         let new_robot = NewRobot {
             name: utils::random_string(8),
@@ -77,7 +83,20 @@ impl Robot {
         }
         Robot {
             data: _robot,
+            active_process: None,
         }
+    }
+
+    /// Handles a tick 
+    pub fn tick(&mut self, conn: &PgConnection) {
+        if let None = self.active_process {
+            self.active_process = Some(Processes::Neutral);
+        }
+
+        let process = self.active_process.as_ref().unwrap();
+
+        let result = process.run(conn);
+        println!("{} {:?} = {:?}", self.data.name, process, result);
     }
 }
 
