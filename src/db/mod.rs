@@ -4,9 +4,8 @@ use diesel::pg::PgConnection;
 use dotenv::dotenv;
 use std::env;
 
-pub mod client;
-
-pub use client::DbClient;
+// pub mod client;
+// pub use client::DbClient;
 
 pub struct DbConfig {
     dbuser: String,
