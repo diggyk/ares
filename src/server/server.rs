@@ -19,7 +19,7 @@ impl Server {
         let grid: Grid = Grid::load(&config.conn).expect("Failed to load grid");
 
         println!("Loaded grid with {} cells", grid.cells.len());
-        
+
         let robots = HashMap::new();
 
         Server { config, grid, robots, shutdown: false }
@@ -32,7 +32,7 @@ impl Server {
                 let coords = self.grid.get_random_open_cell();
                 let orientation: Dir = rand::random();
                 println!("{:?} {:?}", coords, orientation);
-                let mut robot = Robot::new(coords, orientation);
+                let mut robot = Robot::new(coords, orientation, Some(&self.config.conn));
                 self.robots.insert(robot.id, robot);
             }
             if let Ok(elapse) = last_tick.elapsed() {

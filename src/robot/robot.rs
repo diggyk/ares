@@ -1,28 +1,66 @@
+use diesel::prelude::*;
+use diesel::pg::PgConnection;
+
 use crate::utils;
 use crate::grid::*;
+use crate::schema::robots;
 
-#[derive(Debug)]
+#[derive(Debug, Queryable, Insertable)]
+#[table_name="robots"]
+pub struct NewRobot {
+    pub name: String,
+    pub q: i32,
+    pub r: i32,
+    pub orientation: Dir,
+}
+
+#[derive(Debug, Queryable, Insertable)]
+#[table_name="robots"]
 pub struct Robot {
     pub id: i64,
     pub name: String,
 
-    pub coords: Coords,
+    pub owner: Option<i32>,
+    pub affiliation: Option<i32>,
+    pub q: i32,
+    pub r: i32,
     pub orientation: Dir,
-    pub known: Vec<GridCell>,
+    pub gridcell: Option<i32>,
+    pub components: Option<serde_json::Value>,
+    pub configs: Option<serde_json::Value>,
 }
 
 impl Robot {
-    pub fn new(coords: Coords, orientation: Dir) -> Robot {
-        Robot {
-            id: 0,
+    pub fn new(coords: Coords, orientation: Dir, conn: Option<&PgConnection>) -> Robot {
+        let new_robot = NewRobot {
             name: utils::random_string(8),
-            coords,
+            q: coords.q,
+            r: coords.r,
             orientation,
-            known: Vec::new(),
-        }
-    }
+        };
 
-    fn register(&mut self) {
+        let mut _robot: Robot;
+        if let Some(conn) = conn {
+            _robot = diesel::insert_into(robots::table)
+                .values(new_robot)
+                .get_result(conn).expect("Error saving cells");
+        } else {
+            _robot = Robot {
+                id: 0,
+                name: utils::random_string(8),
+                owner: None,
+                affiliation: None,
+                q: coords.q,
+                r: coords.r,
+                orientation,
+                gridcell: None,
+                components: None,
+                configs: None,
+            }
+        }
+
+        println!("{:#?}", _robot);
+        _robot
     }
 }
 
@@ -32,9 +70,9 @@ fn basic_robot_new() {
     let coords = Coords{ q: -2, r: 5};
     let dir = Dir::Orient120;
 
-    let robot = Robot::new(coords, dir);
+    let robot = Robot::new(coords, dir, None);
 
-    assert_eq!(robot.coords.q, -2);
-    assert_eq!(robot.coords.r, 5);
+    assert_eq!(robot.q, -2);
+    assert_eq!(robot.r, 5);
     assert_eq!(robot.orientation, Dir::Orient120);
 }

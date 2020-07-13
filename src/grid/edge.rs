@@ -1,6 +1,6 @@
 use diesel::backend::Backend;
 use diesel::deserialize::{FromSql, Result};
-use diesel::serialize::{self, IsNull, Output, ToSql};
+use diesel::serialize::{self, Output, ToSql};
 use diesel::sql_types::*;
 use std::io::Write;
 

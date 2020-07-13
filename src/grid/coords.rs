@@ -1,3 +1,9 @@
+use diesel::backend::Backend;
+use diesel::deserialize::{FromSql, Result};
+use diesel::serialize::{self, Output, ToSql};
+use diesel::sql_types::*;
+use std::io::Write;
+
 use rand::{
     distributions::{Distribution, Standard},
     Rng,
@@ -10,14 +16,44 @@ pub enum CoordsKind {
     Cube {x: i32, y: i32, z: i32},
 }
 
-#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+#[repr(i16)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, AsExpression, FromSqlRow)]
+#[sql_type = "SmallInt"]
 pub enum Dir {
-    Orient0,
-    Orient60,
-    Orient120,
-    Orient180,
-    Orient240,
-    Orient300,
+    Orient0 = 0,
+    Orient60 = 60,
+    Orient120 = 120,
+    Orient180 = 180,
+    Orient240 = 240,
+    Orient300 = 300,
+}
+
+impl<DB> ToSql<SmallInt, DB> for Dir
+where
+    DB: Backend,
+    i16: ToSql<SmallInt, DB>,
+{
+    fn to_sql<W: Write>(&self, out: &mut Output<W, DB>) -> serialize::Result {
+        (*self as i16).to_sql(out)
+    }
+}
+
+impl<DB> FromSql<SmallInt, DB> for Dir
+where
+    DB: Backend,
+    i16: FromSql<SmallInt, DB>,
+{
+    fn from_sql(bytes: Option<&DB::RawValue>) -> Result<Self> {
+        match i16::from_sql(bytes)? {
+            0 => Ok(Dir::Orient0),
+            60 => Ok(Dir::Orient60),
+            120 => Ok(Dir::Orient120),
+            180 => Ok(Dir::Orient180),
+            240 => Ok(Dir::Orient240),
+            300 => Ok(Dir::Orient300),
+            x => Err(format!("Unrecognized variant {}", x).into()),
+        }
+    }
 }
 
 impl From<i32> for Dir {
