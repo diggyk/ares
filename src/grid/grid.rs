@@ -53,32 +53,6 @@ impl GridCell {
     }
 }
 
-// impl From<postgres::Row> for GridCell {
-//     fn from(item: postgres::Row) -> GridCell {
-//         let id: i32 = item.get(0);
-//         let q: i32 = item.get(1);
-//         let r: i32 = item.get(2);
-//         let coords = Coords{q, r};
-//         let e0: i16 = item.get(3);
-//         let e60: i16 = item.get(4);
-//         let e120: i16 = item.get(5);
-//         let e180: i16 = item.get(6);
-//         let e240: i16 = item.get(7);
-//         let e300: i16 = item.get(8);
-//         let edge0: EdgeType = e0.into();
-//         let edge60: EdgeType = e60.into();
-//         let edge120: EdgeType = e120.into();
-//         let edge180: EdgeType = e180.into();
-//         let edge240: EdgeType = e240.into();
-//         let edge300: EdgeType = e300.into();
-
-//         GridCell {
-//             id, q, r, edge0, edge60, edge120, edge180, edge240, edge300,
-//         }
-//     }
-// }
-
-
 #[derive(Debug)]
 pub struct Grid {
     pub cells: HashMap<Coords, GridCell>,
@@ -88,6 +62,30 @@ pub struct Grid {
 }
 
 impl Grid {
+    pub fn load(conn: &PgConnection) -> Result<Grid, String> {
+        let results = gridcells::table.load::<GridCell>(conn);
+
+        if let Err(reason) = results {
+            return Err(format!("{}", reason));
+        }
+
+        let mut cells_map: HashMap<Coords, GridCell> = HashMap::new();
+        for result in results.unwrap() {
+            let coords = Coords {q: result.q, r: result.r};
+            cells_map.insert(coords, result);
+        }
+
+        Ok(
+            Grid {
+                cells: cells_map,
+                robot_locs: HashMap::new(),
+                valuables_locs: HashMap::new(),
+                less_than_guess: Some(4000),
+            }
+        )
+
+    }
+
     pub fn new(size: u32, conn: Option<&PgConnection>) -> Result<Grid, String> {
         if size == 0 {
             return Err(String::from("Improper grid size"))
@@ -214,16 +212,10 @@ impl Grid {
     }
 }
 
-// impl From<HashMap<Coords, GridCell>> for Grid {
-//     fn from(items: HashMap<Coords, GridCell>) -> Grid {
-//         Grid {cells: items, less_than_guess: None}
-//     }
-// }
-
 #[cfg(test)]
 #[test]
 fn test_cell_creation() {
-    let grid = Grid::new(2).unwrap();
+    let grid = Grid::new(2, None).unwrap();
 
     assert_eq!(19, grid.cells.len());
 }

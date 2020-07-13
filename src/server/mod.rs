@@ -1,12 +1,14 @@
 use clap::{App, Arg};
+use diesel::pg::PgConnection;
 
-pub use crate::db::DbConfig;
 pub mod server;
 pub use server::Server;
 
+use crate::db::*;
 
 pub struct ServerConfig {
     pub dbconfig: DbConfig,
+    pub conn: PgConnection,
 
     // maximum number of robots to spawn
     max_bots: usize,
@@ -59,7 +61,10 @@ pub fn get_config() -> ServerConfig {
         let regen_rate = matches.value_of("regen_rate").unwrap_or("1");
         let regen_rate = regen_rate.parse::<usize>().expect("Could not parse regen rate");
 
+        let dbconfig = DbConfig{dbuser, dbpw, dbhost, dbname};
+        let conn = establish_connection(&dbconfig);
+
         ServerConfig {
-            dbconfig: DbConfig{dbuser, dbpw, dbhost, dbname}, max_bots, regen_rate,
+            dbconfig, conn, max_bots, regen_rate,
         }
 }

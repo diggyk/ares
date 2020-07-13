@@ -15,32 +15,35 @@ pub struct Server {
 }
 
 impl Server {
-    // pub fn new(config: ServerConfig) -> Server {
-    //     let grid: Grid = Grid::new(10).unwrap();
-    //     let robots = HashMap::new();
+    pub fn new(config: ServerConfig) -> Server {
+        let grid: Grid = Grid::load(&config.conn).expect("Failed to load grid");
 
-    //     Server { config, grid, robots, shutdown: false }
-    // }
+        println!("Loaded grid with {} cells", grid.cells.len());
+        
+        let robots = HashMap::new();
 
-    // pub fn run(&mut self) {
-    //     let mut last_tick = SystemTime::now();
-    //     while !self.shutdown {
-    //         if self.robots.len() < self.config.max_bots {
-    //             let coords = self.grid.get_random_open_cell();
-    //             let orientation: Dir = rand::random();
-    //             println!("{:?} {:?}", coords, orientation);
-    //             let mut robot = Robot::new(coords, orientation);
-    //             self.robots.insert(robot.id, robot);
-    //         }
-    //         if let Ok(elapse) = last_tick.elapsed() {
-    //             let sleep_time = std::time::Duration::from_secs(1) - elapse;
-    //             std::thread::sleep(sleep_time);
-    //             last_tick = SystemTime::now();
-    //         } else {
-    //             std::thread::sleep(std::time::Duration::from_secs(1));
-    //             last_tick = SystemTime::now();
-    //         }
-    //         println!("Tick!");
-    //     }
-    // }
+        Server { config, grid, robots, shutdown: false }
+    }
+
+    pub fn run(&mut self) {
+        let mut last_tick = SystemTime::now();
+        while !self.shutdown {
+            if self.robots.len() < self.config.max_bots {
+                let coords = self.grid.get_random_open_cell();
+                let orientation: Dir = rand::random();
+                println!("{:?} {:?}", coords, orientation);
+                let mut robot = Robot::new(coords, orientation);
+                self.robots.insert(robot.id, robot);
+            }
+            if let Ok(elapse) = last_tick.elapsed() {
+                let sleep_time = std::time::Duration::from_secs(1) - elapse;
+                std::thread::sleep(sleep_time);
+                last_tick = SystemTime::now();
+            } else {
+                std::thread::sleep(std::time::Duration::from_secs(1));
+                last_tick = SystemTime::now();
+            }
+            println!("Tick!");
+        }
+    }
 }

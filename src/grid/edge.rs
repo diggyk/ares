@@ -1,4 +1,5 @@
 use diesel::backend::Backend;
+use diesel::deserialize::{FromSql, Result};
 use diesel::serialize::{self, IsNull, Output, ToSql};
 use diesel::sql_types::*;
 use std::io::Write;
@@ -18,6 +19,20 @@ where
 {
     fn to_sql<W: Write>(&self, out: &mut Output<W, DB>) -> serialize::Result {
         (*self as i16).to_sql(out)
+    }
+}
+
+impl<DB> FromSql<SmallInt, DB> for EdgeType
+where
+    DB: Backend,
+    i16: FromSql<SmallInt, DB>,
+{
+    fn from_sql(bytes: Option<&DB::RawValue>) -> Result<Self> {
+        match i16::from_sql(bytes)? {
+            0 => Ok(EdgeType::Open),
+            1 => Ok(EdgeType::Wall),
+            x => Err(format!("Unrecognized variant {}", x).into()),
+        }
     }
 }
 

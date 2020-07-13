@@ -3,9 +3,6 @@ use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use dotenv::dotenv;
 
-// pub mod client;
-// pub use client::DbClient;
-
 pub struct DbConfig {
     pub dbuser: String,
     pub dbpw: String,
