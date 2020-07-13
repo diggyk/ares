@@ -1,11 +1,11 @@
+use std::sync::{Arc, Mutex};
+
 use crate::utils;
 use crate::db::DbClient;
 use crate::grid::*;
 
 #[derive(Debug)]
-pub struct Robot<'a> {
-    dbclient: Option<&'a DbClient>,
-
+pub struct Robot {
     pub id: i64,
     pub name: String,
 
@@ -14,10 +14,9 @@ pub struct Robot<'a> {
     pub known: Vec<GridCell>,
 }
 
-impl<'a> Robot<'a> {
-    pub fn new(coords: Coords, orientation: Dir) -> Robot<'a> {
+impl Robot {
+    pub fn new(coords: Coords, orientation: Dir) -> Robot {
         Robot {
-            dbclient: None,
             id: 0,
             name: utils::random_string(8),
             coords,
@@ -26,14 +25,7 @@ impl<'a> Robot<'a> {
         }
     }
 
-    pub fn attach_db(&mut self, dbclient: &'a DbClient) {
-        self.dbclient = Some(dbclient);
-
-        self.register();
-    }
-
-    fn register(&self) {
-        
+    fn register(&mut self) {
     }
 }
 
@@ -48,21 +40,4 @@ fn basic_robot_new() {
     assert_eq!(robot.coords.q, -2);
     assert_eq!(robot.coords.r, 5);
     assert_eq!(robot.orientation, Dir::Orient120);
-}
-
-#[test]
-fn test_db_attaching() {
-    let mut robot = Robot::new(
-        Coords{q: -1, r: 1},
-        Dir::Orient60,
-    );
-
-    let dbclient = DbClient::new(
-        "testuser",
-        "testpw",
-        "testhost",
-        "testdb",
-    );
-
-    robot.attach_db(&dbclient);
 }

@@ -5,19 +5,17 @@ use super::coords::Coords;
 use super::coords::Dir;
 use super::edge::EdgeType;
 
-#[derive(Debug)]
+#[derive(Debug, Queryable, Insertable)]
 pub struct GridCell {
     pub id: i32,
-    pub coords: Coords,
+    pub q: i32,
+    pub r: i32,
     pub edge0: EdgeType,
     pub edge60: EdgeType,
     pub edge120: EdgeType,
     pub edge180: EdgeType,
     pub edge240: EdgeType,
     pub edge300: EdgeType,
-
-    pub robots: Vec<i64>,
-    pub valuables: Vec<i64>,
 }
 
 impl GridCell {
@@ -37,8 +35,6 @@ impl GridCell {
             edge180: EdgeType::Open,
             edge240: EdgeType::Open,
             edge300: EdgeType::Open,
-            robots: Vec::new(),
-            valuables: Vec::new(),
         }
     }
 
@@ -73,8 +69,6 @@ impl From<postgres::Row> for GridCell {
 
         GridCell {
             id, coords, edge0, edge60, edge120, edge180, edge240, edge300,
-            robots: Vec::new(),
-            valuables: Vec::new(),
         }
     }
 }
@@ -83,7 +77,8 @@ impl From<postgres::Row> for GridCell {
 #[derive(Debug)]
 pub struct Grid {
     pub cells: HashMap<Coords, GridCell>,
-
+    pub robot_locs: HashMap<Coords, i64>,
+    pub valuables_locs: HashMap<Coords, i64>,
     less_than_guess: Option<i32>,
 }
 
@@ -124,6 +119,8 @@ impl Grid {
         Ok(
             Grid {
                 cells: cells,
+                robot_locs: HashMap::new(),
+                valuables_locs: HashMap::new(),
                 less_than_guess: Some(5000),
             }
         )
@@ -164,7 +161,7 @@ impl Grid {
         }
     }
 
-    pub fn get_random_open_cell(&mut self) -> &GridCell {
+    pub fn get_random_open_cell(&mut self) -> Coords {
         let mut rng = rand::thread_rng();
         let mut found_coords: Option<Coords> = None;
         while let None = found_coords {
@@ -183,15 +180,16 @@ impl Grid {
             }
         }
 
-        self.cells.get(&found_coords.unwrap()).unwrap()
+        let cell = self.cells.get(&found_coords.unwrap()).unwrap();
+        cell.coords.clone()
     }
 }
 
-impl From<HashMap<Coords, GridCell>> for Grid {
-    fn from(items: HashMap<Coords, GridCell>) -> Grid {
-        Grid {cells: items, less_than_guess: None}
-    }
-}
+// impl From<HashMap<Coords, GridCell>> for Grid {
+//     fn from(items: HashMap<Coords, GridCell>) -> Grid {
+//         Grid {cells: items, less_than_guess: None}
+//     }
+// }
 
 #[cfg(test)]
 #[test]

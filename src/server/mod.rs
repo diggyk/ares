@@ -1,14 +1,12 @@
-pub mod server;
-
-pub use server::Server;
-
 use clap::{App, Arg};
 
+pub use crate::db::DbConfig;
+pub mod server;
+pub use server::Server;
+
+
 pub struct ServerConfig {
-    dbuser: String,
-    dbpw: String,
-    dbhost: String,
-    dbname: String,
+    dbconfig: DbConfig,
 
     // maximum number of robots to spawn
     max_bots: usize,
@@ -62,6 +60,6 @@ pub fn get_config() -> ServerConfig {
         let regen_rate = regen_rate.parse::<usize>().expect("Could not parse regen rate");
 
         ServerConfig {
-            dbuser, dbpw, dbhost, dbname, max_bots, regen_rate,
+            dbconfig: DbConfig{dbuser, dbpw, dbhost, dbname}, max_bots, regen_rate,
         }
 }

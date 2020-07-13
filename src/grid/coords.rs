@@ -1,3 +1,7 @@
+use rand::{
+    distributions::{Distribution, Standard},
+    Rng,
+};
 
 // holds the Coordinates as either Axial or Cube coords
 #[derive(Debug)]
@@ -42,6 +46,21 @@ impl From<Dir> for i32 {
         }
     }
 }
+
+impl Distribution<Dir> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Dir {
+        match rng.gen_range(0, 6) {
+            0 => Dir::Orient0,
+            1 => Dir::Orient60,
+            2 => Dir::Orient120,
+            3 => Dir::Orient180,
+            4 => Dir::Orient240,
+            5 => Dir::Orient300,
+            _ => Dir::Orient0,
+        }
+    }
+}
+
 
 impl From<i16> for Dir {
     fn from(item: i16) -> Dir {
