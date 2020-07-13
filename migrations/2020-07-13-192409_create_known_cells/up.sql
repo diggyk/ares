@@ -6,13 +6,13 @@ CREATE TABLE public.robot_known_cells
     PRIMARY KEY (robot_id, gridcell_id),
     CONSTRAINT gridcell_id_key FOREIGN KEY (gridcell_id)
         REFERENCES public.gridcells (id) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
         NOT VALID,
     CONSTRAINT robot_id_key FOREIGN KEY (robot_id)
         REFERENCES public.robots (id) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
         NOT VALID
 )
 
