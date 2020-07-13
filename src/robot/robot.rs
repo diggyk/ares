@@ -70,7 +70,6 @@ impl Robot {
             }
         }
 
-        println!("{:#?}", _robot);
         _robot
     }
 }
