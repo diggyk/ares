@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
-use time::Timespec;
 
 use crate::utils;
 use crate::grid::*;
@@ -38,11 +37,12 @@ pub struct RobotData {
 pub struct RobotKnownCell {
     pub robot_id: i64,
     pub gridcell_id: i32,
-    pub discovery_time: Timespec,
+    pub discovery_time: std::time::SystemTime,
 }
 
 pub struct Robot {
     pub data: RobotData,
+    pub known_cells: Vec<RobotKnownCell>,
     pub active_process: Option<Processes>,
 }
 
@@ -53,10 +53,19 @@ impl Robot {
         let results = robots::table.load::<RobotData>(conn).expect("Failed to load robots");
         
         for result in results {
-            _robots.insert(result.id, Robot {
+            let id = result.id;
+            let mut robot = Robot {
                 data: result,
+                known_cells: Vec::new(),
                 active_process: None,
-            });
+            };
+
+            if let Ok(known_cells) = robot_known_cells::table.filter(
+                robot_known_cells::robot_id.eq(id)
+            ).load::<RobotKnownCell>(conn) {
+                robot.known_cells = known_cells;
+            }
+            _robots.insert(id, robot);
         }
 
         _robots
@@ -90,8 +99,10 @@ impl Robot {
                 configs: None,
             }
         }
+
         Robot {
             data: _robot,
+            known_cells: Vec::new(),
             active_process: None,
         }
     }

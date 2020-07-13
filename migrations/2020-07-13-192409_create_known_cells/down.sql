@@ -1,0 +1,1 @@
+DROP TABLE public.robot_known_cells;

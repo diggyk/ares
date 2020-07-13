@@ -16,7 +16,7 @@ table! {
     robot_known_cells (robot_id) {
         robot_id -> Int8,
         gridcell_id -> Int4,
-        discovery_time -> Nullable<Timestamp>,
+        discovery_time -> Timestamp,
     }
 }
 
