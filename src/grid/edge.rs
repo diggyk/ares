@@ -1,8 +1,26 @@
-#[derive(Clone, Debug, PartialEq, Eq)]
+use diesel::backend::Backend;
+use diesel::serialize::{self, IsNull, Output, ToSql};
+use diesel::sql_types::*;
+use std::io::Write;
+
+#[repr(i16)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, AsExpression, FromSqlRow)]
+#[sql_type = "SmallInt"]
 pub enum EdgeType {
-    Open,
-    Wall,
+    Open = 0,
+    Wall = 1,
 }
+
+impl<DB> ToSql<SmallInt, DB> for EdgeType
+where
+    DB: Backend,
+    i16: ToSql<SmallInt, DB>,
+{
+    fn to_sql<W: Write>(&self, out: &mut Output<W, DB>) -> serialize::Result {
+        (*self as i16).to_sql(out)
+    }
+}
+
 
 impl From<i32> for EdgeType {
     fn from(item: i32) -> EdgeType {

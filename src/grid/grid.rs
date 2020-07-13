@@ -1,11 +1,15 @@
+use diesel::prelude::*;
+use diesel::pg::PgConnection;
 use rand::Rng;
 use std::collections::HashMap;
 
+use crate::schema::gridcells;
 use super::coords::Coords;
 use super::coords::Dir;
 use super::edge::EdgeType;
 
 #[derive(Debug, Queryable, Insertable)]
+#[table_name="gridcells"]
 pub struct GridCell {
     pub id: i32,
     pub q: i32,
@@ -22,7 +26,8 @@ impl GridCell {
     pub fn new(id: i32, coords: &Coords) -> GridCell {
         GridCell {
             id: id,
-            coords: Coords{..*coords},
+            q: coords.q,
+            r: coords.r,
             // edge0: EdgeType::Wall,
             // edge60: EdgeType::Wall,
             // edge120: EdgeType::Wall,
@@ -48,30 +53,30 @@ impl GridCell {
     }
 }
 
-impl From<postgres::Row> for GridCell {
-    fn from(item: postgres::Row) -> GridCell {
-        let id: i32 = item.get(0);
-        let q: i32 = item.get(1);
-        let r: i32 = item.get(2);
-        let coords = Coords{q, r};
-        let e0: i16 = item.get(3);
-        let e60: i16 = item.get(4);
-        let e120: i16 = item.get(5);
-        let e180: i16 = item.get(6);
-        let e240: i16 = item.get(7);
-        let e300: i16 = item.get(8);
-        let edge0: EdgeType = e0.into();
-        let edge60: EdgeType = e60.into();
-        let edge120: EdgeType = e120.into();
-        let edge180: EdgeType = e180.into();
-        let edge240: EdgeType = e240.into();
-        let edge300: EdgeType = e300.into();
+// impl From<postgres::Row> for GridCell {
+//     fn from(item: postgres::Row) -> GridCell {
+//         let id: i32 = item.get(0);
+//         let q: i32 = item.get(1);
+//         let r: i32 = item.get(2);
+//         let coords = Coords{q, r};
+//         let e0: i16 = item.get(3);
+//         let e60: i16 = item.get(4);
+//         let e120: i16 = item.get(5);
+//         let e180: i16 = item.get(6);
+//         let e240: i16 = item.get(7);
+//         let e300: i16 = item.get(8);
+//         let edge0: EdgeType = e0.into();
+//         let edge60: EdgeType = e60.into();
+//         let edge120: EdgeType = e120.into();
+//         let edge180: EdgeType = e180.into();
+//         let edge240: EdgeType = e240.into();
+//         let edge300: EdgeType = e300.into();
 
-        GridCell {
-            id, coords, edge0, edge60, edge120, edge180, edge240, edge300,
-        }
-    }
-}
+//         GridCell {
+//             id, q, r, edge0, edge60, edge120, edge180, edge240, edge300,
+//         }
+//     }
+// }
 
 
 #[derive(Debug)]
@@ -83,7 +88,7 @@ pub struct Grid {
 }
 
 impl Grid {
-    pub fn new(size: u32) -> Result<Grid, String> {
+    pub fn new(size: u32, conn: Option<&PgConnection>) -> Result<Grid, String> {
         if size == 0 {
             return Err(String::from("Improper grid size"))
         }
@@ -112,6 +117,30 @@ impl Grid {
                         Grid::enforce_wall(&mut cell, &dir, num == radius - 1);
                     }
                     cells.insert(coords.clone(), cell);
+                }
+            }
+        }
+
+        if let Some(conn) = conn {
+            diesel::delete(gridcells::table).execute(conn).expect("Could not drop gridcells table");
+            let cell_values = cells.values().collect::<Vec<&GridCell>>();
+
+
+            let mut start = 0;
+            let size = cell_values.len();
+            while start < size {
+                let mut end = start + 300;
+                if end > size {
+                    end = size;
+                }
+
+                if let Some(_cells) = cell_values.get(start..end) {
+                    diesel::insert_into(gridcells::table)
+                        .values(_cells.to_vec())
+                        .execute(conn).expect("Error saving cells");
+                
+                    start = end;
+                    println!("{}/{}", start, size);
                 }
             }
         }
@@ -181,7 +210,7 @@ impl Grid {
         }
 
         let cell = self.cells.get(&found_coords.unwrap()).unwrap();
-        cell.coords.clone()
+        Coords {q: cell.q, r: cell.r}
     }
 }
 

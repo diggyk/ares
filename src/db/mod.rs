@@ -2,16 +2,15 @@
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use dotenv::dotenv;
-use std::env;
 
 // pub mod client;
 // pub use client::DbClient;
 
 pub struct DbConfig {
-    dbuser: String,
-    dbpw: String,
-    dbhost: String,
-    dbname: String,
+    pub dbuser: String,
+    pub dbpw: String,
+    pub dbhost: String,
+    pub dbname: String,
 }
 
 impl DbConfig {

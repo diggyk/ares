@@ -6,7 +6,7 @@ pub use server::Server;
 
 
 pub struct ServerConfig {
-    dbconfig: DbConfig,
+    pub dbconfig: DbConfig,
 
     // maximum number of robots to spawn
     max_bots: usize,

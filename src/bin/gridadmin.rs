@@ -1,7 +1,7 @@
 use clap::{Arg, App};
 
 use ares::grid::Grid;
-use ares::db::DbClient;
+use ares::db;
 
 fn main() {
     let matches = App::new("Ares Grid Admin")
@@ -33,18 +33,17 @@ fn main() {
             .help("Grid radius size"))
         .get_matches();
 
-    let dbuser = matches.value_of("dbuser").unwrap_or("ares");
-    let dbpw = matches.value_of("dbpw").unwrap_or("ares");
-    let dbhost = matches.value_of("dbhost").unwrap_or("localhost");
-    let dbname = matches.value_of("db").unwrap_or("ares");
+    let dbuser = matches.value_of("dbuser").unwrap_or("ares").to_string();
+    let dbpw = matches.value_of("dbpw").unwrap_or("ares").to_string();
+    let dbhost = matches.value_of("dbhost").unwrap_or("localhost").to_string();
+    let dbname = matches.value_of("db").unwrap_or("ares").to_string();
 
     let size = matches.value_of("size").unwrap_or("100");
     let size = size.parse::<u32>().expect("Could not parse size");
 
-    let mut dbclient = DbClient::new(dbuser, dbpw, dbhost, dbname);
+    let dbconfig = db::DbConfig{dbuser, dbpw, dbhost, dbname};
+    let connection = db::establish_connection(&dbconfig);
     
-    let grid = Grid::new(size).unwrap();
-    dbclient.drop_all_cells();
-    dbclient.create_cells(&grid.cells);
+    let grid = Grid::new(size, Some(&connection)).unwrap();
     println!("Cells: {}", grid.cells.len())
 }
