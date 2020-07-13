@@ -1,13 +1,15 @@
 use diesel::PgConnection;
 
-use super::Process;
-use super::Processes;
-use super::ProcessResult;
+use crate::grid::*;
+use super::*;
 
 pub struct Scan {}
 
 impl Process for Scan {
-    fn run(conn: &PgConnection) -> ProcessResult {
+    fn run(conn: &PgConnection, robot: &mut Robot) -> ProcessResult {
+        let our_coords = Coords{ q: robot.data.q, r: robot.data.r };
+        
+
         ProcessResult::Ok
     }
 }

@@ -56,6 +56,33 @@ where
     }
 }
 
+impl From<i16> for Dir {
+    fn from(item: i16) -> Dir {
+        match item {
+            0 => Dir::Orient0,
+            60 => Dir::Orient60,
+            120 => Dir::Orient120,
+            180 => Dir::Orient180,
+            240 => Dir::Orient240,
+            300 => Dir::Orient300,
+            _ => Dir::Orient0,
+        }
+    } 
+ }
+ 
+ impl From<Dir> for i16 {
+     fn from(item: Dir) -> i16 {
+         match item {
+             Dir::Orient0 => 0,
+             Dir::Orient60 => 60,
+             Dir::Orient120 => 120,
+             Dir::Orient180 => 180,
+             Dir::Orient240 => 240,
+             Dir::Orient300 => 300,
+         }
+     }
+ }
+
 impl From<i32> for Dir {
    fn from(item: i32) -> Dir {
        match item {
@@ -97,33 +124,30 @@ impl Distribution<Dir> for Standard {
     }
 }
 
+impl Dir {
+    pub fn left(&self, angle: i32) -> Dir {
+        let a1: i32 = self.clone().into();
+        let mut a1 = a1 - angle;
 
-impl From<i16> for Dir {
-    fn from(item: i16) -> Dir {
-        match item {
-            0 => Dir::Orient0,
-            60 => Dir::Orient60,
-            120 => Dir::Orient120,
-            180 => Dir::Orient180,
-            240 => Dir::Orient240,
-            300 => Dir::Orient300,
-            _ => Dir::Orient0,
+        if a1 < 0 {
+            a1 = a1 + 360;
         }
-    } 
- }
- 
- impl From<Dir> for i16 {
-     fn from(item: Dir) -> i16 {
-         match item {
-             Dir::Orient0 => 0,
-             Dir::Orient60 => 60,
-             Dir::Orient120 => 120,
-             Dir::Orient180 => 180,
-             Dir::Orient240 => 240,
-             Dir::Orient300 => 300,
-         }
-     }
- }
+
+        a1.into()
+    }
+
+    pub fn right(&self, angle: i32) -> Dir {
+        let a1: i32 = self.clone().into();
+        let mut a1 = a1 + angle;
+
+        if a1 < 360 {
+            a1 = a1 - 360;
+        }
+
+        a1.into()
+    }
+}
+
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct Coords {

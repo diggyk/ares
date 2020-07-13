@@ -113,10 +113,14 @@ impl Robot {
             self.active_process = Some(Processes::Neutral);
         }
 
-        let process = self.active_process.as_ref().unwrap();
+        let process = self.active_process.as_ref().unwrap().clone();
 
-        let result = process.run(conn);
-        println!("{} {:?} = {:?}", self.data.name, process, result);
+        let result = match process {
+            Processes::Neutral => Neutral::run(conn, self),
+            Processes::Scan => ProcessResult::Ok,
+        };
+
+        println!("{:?}", result);
     }
 }
 

@@ -214,6 +214,39 @@ impl Grid {
         let cell = self.cells.get(&found_coords.unwrap()).unwrap();
         Coords {q: cell.q, r: cell.r}
     }
+
+    pub fn get_cells(&self, start_coords: Coords, dir: Dir, fov: i32, distance: i32) -> Vec<&GridCell> {
+        let mut found_cells = Vec::new();
+
+        // add our current cell
+        if let Some(cell) = self.cells.get(&start_coords) {
+            found_cells.push(cell);
+        }
+
+        let start_arm_dir = dir.left(fov/2);
+
+        // we want to sweep in arcs, moving out by radius to max distance
+        for r in 1..distance + 1 {
+            let mut coord = start_coords.to(&start_arm_dir, r);
+            let mut scan_dir = start_arm_dir.right(60);
+
+            if let Some(cell) = self.cells.get(&coord) {
+                found_cells.push(cell);
+            }
+
+            for _ in (0..fov).step_by(60) {
+                scan_dir = scan_dir.right(60);
+                for _ in 1..r {
+                    coord = coord.to(&scan_dir, 1);
+                    if let Some(cell) = self.cells.get(&coord) {
+                        found_cells.push(cell);
+                    }
+                }
+            }
+        }
+
+        found_cells
+    }
 }
 
 #[cfg(test)]

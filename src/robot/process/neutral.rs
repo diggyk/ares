@@ -1,13 +1,12 @@
 use diesel::PgConnection;
 
-use super::Process;
-use super::Processes;
-use super::ProcessResult;
+use super::*;
 
 pub struct Neutral {}
 
+/// The "Neutral" process is when there is no active fleeing, mining, or exploring going on
 impl Process for Neutral {
-    fn run(conn: &PgConnection) -> ProcessResult {
-        ProcessResult::Ok
+    fn run(conn: &PgConnection, robot: &mut Robot) -> ProcessResult {
+        Scan::run(conn, robot)
     }
 }
