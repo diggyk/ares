@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
+use time::Timespec;
 
 use crate::utils;
 use crate::grid::*;
-use crate::schema::robots;
+use crate::schema::*;
 use super::process::*;
 
 #[derive(Debug, Queryable, Insertable)]
@@ -30,6 +31,14 @@ pub struct RobotData {
     pub gridcell: Option<i32>,
     pub components: Option<serde_json::Value>,
     pub configs: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Queryable, Insertable)]
+#[table_name="robot_known_cells"]
+pub struct RobotKnownCell {
+    pub robot_id: i64,
+    pub gridcell_id: i32,
+    pub discovery_time: Timespec,
 }
 
 pub struct Robot {

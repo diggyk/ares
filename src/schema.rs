@@ -13,6 +13,14 @@ table! {
 }
 
 table! {
+    robot_known_cells (robot_id) {
+        robot_id -> Int8,
+        gridcell_id -> Int4,
+        discovery_time -> Nullable<Timestamp>,
+    }
+}
+
+table! {
     robots (id) {
         id -> Int8,
         name -> Varchar,
@@ -39,8 +47,12 @@ table! {
     }
 }
 
+joinable!(robot_known_cells -> gridcells (gridcell_id));
+joinable!(robot_known_cells -> robots (robot_id));
+
 allow_tables_to_appear_in_same_query!(
     gridcells,
+    robot_known_cells,
     robots,
     valuables,
 );
