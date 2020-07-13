@@ -29,7 +29,7 @@ impl Server {
 
         let mut robot_locs: HashMap<Coords, i64> = HashMap::new();
         for (id, robot) in &robots {
-            robot_locs.insert(Coords{ q: robot.q, r: robot.r }, *id);
+            robot_locs.insert(Coords{ q: robot.data.q, r: robot.data.r }, *id);
         }
 
         grid.robot_locs = robot_locs;
@@ -42,8 +42,8 @@ impl Server {
         let coords = self.grid.get_random_open_cell();
         let orientation: Dir = rand::random();
         let robot = Robot::new(coords.clone(), orientation, Some(&self.config.conn));
-        self.grid.robot_locs.insert(coords.clone(), robot.id);
-        self.robots.insert(robot.id, robot);
+        self.grid.robot_locs.insert(coords.clone(), robot.data.id);
+        self.robots.insert(robot.data.id, robot);
     }
 
     /// The main run loop for the ARES server.  Spawns robots if needed; tick all the robot

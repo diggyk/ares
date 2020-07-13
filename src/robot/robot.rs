@@ -17,7 +17,7 @@ pub struct NewRobot {
 
 #[derive(Debug, Queryable, Insertable)]
 #[table_name="robots"]
-pub struct Robot {
+pub struct RobotData {
     pub id: i64,
     pub name: String,
 
@@ -31,13 +31,19 @@ pub struct Robot {
     pub configs: Option<serde_json::Value>,
 }
 
+pub struct Robot {
+    pub data: RobotData,
+}
+
 impl Robot {
     pub fn load_all(conn: &PgConnection) -> HashMap<i64, Robot> {
         let mut _robots = HashMap::new();
-        let results = robots::table.load::<Robot>(conn).expect("Failed to load robots");
+        let results = robots::table.load::<RobotData>(conn).expect("Failed to load robots");
         
         for result in results {
-            _robots.insert(result.id, result);
+            _robots.insert(result.id, Robot {
+                data: result,
+            });
         }
 
         _robots
@@ -50,13 +56,13 @@ impl Robot {
             orientation,
         };
 
-        let mut _robot: Robot;
+        let mut _robot: RobotData;
         if let Some(conn) = conn {
             _robot = diesel::insert_into(robots::table)
                 .values(new_robot)
                 .get_result(conn).expect("Error saving cells");
         } else {
-            _robot = Robot {
+            _robot = RobotData {
                 id: 0,
                 name: utils::random_string(8),
                 owner: None,
@@ -69,8 +75,9 @@ impl Robot {
                 configs: None,
             }
         }
-
-        _robot
+        Robot {
+            data: _robot,
+        }
     }
 }
 
@@ -82,7 +89,7 @@ fn basic_robot_new() {
 
     let robot = Robot::new(coords, dir, None);
 
-    assert_eq!(robot.q, -2);
-    assert_eq!(robot.r, 5);
-    assert_eq!(robot.orientation, Dir::Orient120);
+    assert_eq!(robot.data.q, -2);
+    assert_eq!(robot.data.r, 5);
+    assert_eq!(robot.data.orientation, Dir::Orient120);
 }
