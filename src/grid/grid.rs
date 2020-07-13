@@ -195,14 +195,16 @@ impl Grid {
         let mut found_coords: Option<Coords> = None;
         while let None = found_coords {
             let max_range = self.less_than_guess.unwrap_or(5000);
-            let q: i32 = rng.gen_range(max_range * -1, max_range);
-            let r: i32 = rng.gen_range(max_range * -1, max_range);
+            let q: i32 = rng.gen_range(max_range * -1 - 1, max_range + 1);
+            let r: i32 = rng.gen_range(max_range * -1 - 1, max_range + 1);
 
             let test_coords = Coords{q,r};
 
             if self.cells.contains_key(&test_coords) {
                 if self.cells.get(&test_coords).unwrap().is_open() {
-                    found_coords = Some(test_coords);
+                    if !self.robot_locs.contains_key(&test_coords) {
+                        found_coords = Some(test_coords);
+                    }
                 }
             } else {
                 self.less_than_guess = std::cmp::max(Some(q.abs()), Some(r.abs()));

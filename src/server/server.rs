@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::time::SystemTime;
 
+use crate::grid::Coords;
 use crate::grid::Dir;
 use crate::grid::Grid;
 use crate::robot::Robot;
@@ -16,13 +17,18 @@ pub struct Server {
 
 impl Server {
     pub fn new(config: ServerConfig) -> Server {
-        let grid: Grid = Grid::load(&config.conn).expect("Failed to load grid");
-
+        let mut grid: Grid = Grid::load(&config.conn).expect("Failed to load grid");
         println!("Loaded grid with {} cells", grid.cells.len());
 
         let robots: HashMap<i64, Robot> = Robot::load_all(&config.conn);
-        
         println!("Loaded {} active robots", robots.len());
+
+        let mut robot_locs: HashMap<Coords, i64> = HashMap::new();
+        for (id, robot) in &robots {
+            robot_locs.insert(Coords{ q: robot.q, r: robot.r }, *id);
+        }
+
+        grid.robot_locs = robot_locs;
 
         Server { config, grid, robots, shutdown: false }
     }
@@ -34,7 +40,8 @@ impl Server {
                 let coords = self.grid.get_random_open_cell();
                 let orientation: Dir = rand::random();
                 println!("{:?} {:?}", coords, orientation);
-                let mut robot = Robot::new(coords, orientation, Some(&self.config.conn));
+                let robot = Robot::new(coords.clone(), orientation, Some(&self.config.conn));
+                self.grid.robot_locs.insert(coords.clone(), robot.id);
                 self.robots.insert(robot.id, robot);
             }
             if let Ok(elapse) = last_tick.elapsed() {
