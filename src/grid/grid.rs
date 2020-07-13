@@ -3,7 +3,7 @@ use diesel::pg::PgConnection;
 use rand::Rng;
 use std::collections::HashMap;
 
-use crate::schema::gridcells;
+use crate::schema::*;
 use super::coords::Coords;
 use super::coords::Dir;
 use super::edge::EdgeType;
@@ -120,6 +120,8 @@ impl Grid {
         }
 
         if let Some(conn) = conn {
+            diesel::delete(robots::table).execute(conn).expect("Could not drop gridcells table");
+            diesel::delete(valuables::table).execute(conn).expect("Could not drop gridcells table");
             diesel::delete(gridcells::table).execute(conn).expect("Could not drop gridcells table");
             let cell_values = cells.values().collect::<Vec<&GridCell>>();
 

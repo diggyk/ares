@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
 
@@ -31,6 +32,16 @@ pub struct Robot {
 }
 
 impl Robot {
+    pub fn load_all(conn: &PgConnection) -> HashMap<i64, Robot> {
+        let mut _robots = HashMap::new();
+        let results = robots::table.load::<Robot>(conn).expect("Failed to load robots");
+        
+        for result in results {
+            _robots.insert(result.id, result);
+        }
+
+        _robots
+    }
     pub fn new(coords: Coords, orientation: Dir, conn: Option<&PgConnection>) -> Robot {
         let new_robot = NewRobot {
             name: utils::random_string(8),

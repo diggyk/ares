@@ -20,7 +20,9 @@ impl Server {
 
         println!("Loaded grid with {} cells", grid.cells.len());
 
-        let robots = HashMap::new();
+        let robots: HashMap<i64, Robot> = Robot::load_all(&config.conn);
+        
+        println!("Loaded {} active robots", robots.len());
 
         Server { config, grid, robots, shutdown: false }
     }
