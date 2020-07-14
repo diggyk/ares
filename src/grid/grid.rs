@@ -4,8 +4,8 @@ use rand::Rng;
 use std::collections::HashMap;
 
 use crate::schema::*;
-use super::coords::Coords;
-use super::coords::Dir;
+use crate::utils::*;
+use super::coords::*;
 use super::edge::EdgeType;
 
 #[derive(Debug, Queryable, Insertable)]
@@ -256,8 +256,8 @@ impl Grid {
     /// Is a coord visible from another place
     pub fn is_visible(&self, start_coords: Coords, end_coords: Coords) -> bool {
         // calculate the angle from the x+ horizontal line b/c verticle lines have no slope
-        let p1 = start_coords.to_flat2d();
-        let p2 = end_coords.to_flat2d();
+        // let p1: CoordsKind = start_coords.to_flat2d();
+        // let p2: CoordsKind = end_coords.to_flat2d();
 
         true
     }

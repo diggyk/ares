@@ -6,6 +6,7 @@ mod scan;
 pub use neutral::Neutral;
 pub use scan::Scan;
 
+use crate::grid::*;
 use super::Robot;
 
 
@@ -16,8 +17,10 @@ pub enum ProcessResult {
     Ok,
     /// Indicates the process failed
     Fail,
-    /// Indicates that the process should be changed on the next run
-    TransitionProcess(Processes),
+    /// Result of a scan
+    ScannedCells(Vec<Coords>),
+    /// Indicate a switch to Move; the last bool means to spin 180 at the end
+    TransitionToMove(Option<Coords>, Option<Dir>, bool),
 }
 
 /// List of all the processes with helpers to run the process
@@ -29,5 +32,5 @@ pub enum Processes {
 
 /// Trait to define a process
 pub trait Process {
-    fn run(conn: &PgConnection, robot: &mut Robot) -> ProcessResult;
+    fn run(conn: &PgConnection, robot: &mut Robot, message: Option<ProcessResult>) -> ProcessResult;
 }

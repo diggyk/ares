@@ -11,25 +11,28 @@ use super::*;
 pub struct Scan {}
 
 impl Process for Scan {
-    fn run(conn: &PgConnection, robot: &mut Robot) -> ProcessResult {
+    fn run(conn: &PgConnection, robot: &mut Robot, message: Option<ProcessResult>) -> ProcessResult {
         let our_coords = Coords{ q: robot.data.q, r: robot.data.r };
         let grid = robot.grid.lock().unwrap();
 
         // For now, let's scan in a 120 for distance of 2
-        let cells = grid.get_cells(our_coords, robot.data.orientation, 0, 2);
+        let cells = grid.get_cells(our_coords, robot.data.orientation, 120, 2);
 
         let mut known_cells: Vec<RobotKnownCell> = Vec::new();
+        let mut scanned_cells: Vec<Coords> = Vec::new();
         for cell in cells {
+            // TODO: see if this cell is visible from this starting location
             known_cells.push(
                 RobotKnownCell {
                     robot_id: robot.data.id,
                     gridcell_id: cell.id,
                     discovery_time: SystemTime::now(),
+                    q: cell.q,
+                    r: cell.r,
                 }
-            )
+            );
+            scanned_cells.push(Coords{q: cell.q, r: cell.r});
         }
-
-        println!("{:#?}", known_cells);
 
         let query = diesel::insert_into(robot_known_cells::table).values(&known_cells)
             .on_conflict((robot_known_cells::robot_id, robot_known_cells::gridcell_id))
@@ -42,6 +45,6 @@ impl Process for Scan {
 
         robot.known_cells = known_cells;
 
-        ProcessResult::Ok
+        ProcessResult::ScannedCells(scanned_cells)
     }
 }

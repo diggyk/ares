@@ -40,6 +40,8 @@ pub struct RobotKnownCell {
     pub robot_id: i64,
     pub gridcell_id: i32,
     pub discovery_time: std::time::SystemTime,
+    pub q: i32,
+    pub r: i32,
 }
 
 impl RobotKnownCell {
@@ -137,10 +139,12 @@ impl Robot {
         let process = self.active_process.as_ref().unwrap().clone();
 
         let result = match process {
-            Processes::Neutral => Neutral::run(conn, self),
+            Processes::Neutral => Neutral::run(conn, self, None),
             Processes::Scan => ProcessResult::Ok,
         };
 
         println!("{:?}", result);
+
+        // TODO: Do something with the result to figure out what's next
     }
 }

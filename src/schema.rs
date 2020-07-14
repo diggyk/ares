@@ -17,6 +17,8 @@ table! {
         robot_id -> Int8,
         gridcell_id -> Int4,
         discovery_time -> Timestamp,
+        q -> Int4,
+        r -> Int4,
     }
 }
 
