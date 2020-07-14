@@ -51,6 +51,17 @@ impl GridCell {
         || self.edge240 != EdgeType::Wall
         || self.edge300 != EdgeType::Wall
     }
+
+    pub fn get_side(&self, orientation: Dir) -> EdgeType {
+        match orientation {
+            Dir::Orient0 => self.edge0,
+            Dir::Orient60 => self.edge60,
+            Dir::Orient120 => self.edge120,
+            Dir::Orient180 => self.edge180,
+            Dir::Orient240 => self.edge240,
+            Dir::Orient300 => self.edge300,
+        }
+    }
 }
 
 #[derive(Debug)]

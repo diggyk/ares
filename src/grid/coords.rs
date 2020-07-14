@@ -3,6 +3,8 @@ use diesel::deserialize::{FromSql, Result};
 use diesel::serialize::{self, Output, ToSql};
 use diesel::sql_types::*;
 use std::io::Write;
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 
 use rand::{
     distributions::{Distribution, Standard},
@@ -18,7 +20,7 @@ pub enum CoordsKind {
 }
 
 #[repr(i16)]
-#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, AsExpression, FromSqlRow)]
+#[derive(Copy, Clone, Debug, EnumIter, Hash, PartialEq, Eq, AsExpression, FromSqlRow)]
 #[sql_type = "SmallInt"]
 pub enum Dir {
     Orient0 = 0,
@@ -27,6 +29,12 @@ pub enum Dir {
     Orient180 = 180,
     Orient240 = 240,
     Orient300 = 300,
+}
+
+impl Dir {
+    pub fn get_iter() -> DirIter {
+        Dir::iter()
+    }
 }
 
 impl<DB> ToSql<SmallInt, DB> for Dir

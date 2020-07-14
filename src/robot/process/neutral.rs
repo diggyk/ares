@@ -1,4 +1,6 @@
 use diesel::PgConnection;
+use rand::thread_rng;
+use rand::seq::SliceRandom;
 
 use super::*;
 use super::ProcessResult;
@@ -39,8 +41,32 @@ impl Neutral {
     }
 
     fn goto_random_unexplored_cell(robot: &Robot) -> ProcessResult {
-        for cell in &robot.known_cells {
+        let mut search_order: Vec<Dir> = Dir::get_iter().collect();
+        let mut rng = thread_rng();
+        search_order.shuffle(&mut rng);
 
+        let mut known_coords: Vec<Coords> = Vec::new();
+
+        for known_cell in &robot.known_cells {
+            known_coords.push(Coords{ q: known_cell.q, r: known_cell.r });
+        }
+
+        for cell_coords in &known_coords {
+            let grid = robot.grid.lock().unwrap();
+            let cell = grid.cells.get(&cell_coords);
+            if let None = cell {
+                continue;
+            }
+
+            // check the edges in random order; if open, see if know the cell beyond it
+            for orientation in &search_order {
+                if cell.unwrap().get_side(*orientation) != EdgeType::Wall {
+                    let test_coords = cell_coords.to(orientation, 1);
+                    if !known_coords.contains(&test_coords) {
+                        return ProcessResult::TransitionToMove(Some(test_coords), Some(*orientation), false);
+                    }
+                }
+            }
         }
 
         ProcessResult::Ok
