@@ -16,7 +16,7 @@ impl Process for Scan {
         let grid = robot.grid.lock().unwrap();
 
         // For now, let's scan in a 120 for distance of 2
-        let cells = grid.get_cells(our_coords, robot.data.orientation, 120, 1);
+        let cells = grid.get_cells(our_coords, robot.data.orientation, 0, 2);
 
         let mut known_cells: Vec<RobotKnownCell> = Vec::new();
         for cell in cells {
@@ -31,10 +31,16 @@ impl Process for Scan {
 
         println!("{:#?}", known_cells);
 
-        let query = diesel::insert_into(robot_known_cells::table).values(known_cells)
+        let query = diesel::insert_into(robot_known_cells::table).values(&known_cells)
             .on_conflict((robot_known_cells::robot_id, robot_known_cells::gridcell_id))
             .do_update().set(robot_known_cells::discovery_time.eq(SystemTime::now()))
-            .execute(conn).expect("Could not store known cells");
+            .execute(conn);
+
+        if let Err(reason) = query {
+            println!("Could not update known cells: {:?}", reason);
+        }
+
+        robot.known_cells = known_cells;
 
         ProcessResult::Ok
     }
