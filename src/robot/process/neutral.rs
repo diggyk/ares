@@ -49,37 +49,37 @@ impl Neutral {
 
     fn goto_random_unexplored_cell(robot: &Robot) -> ProcessResult {
 
-        return ProcessResult::TransitionToMove(Some(Coords{q: -2, r: 2}), Some(Dir::Orient0), false);
+        // return ProcessResult::TransitionToMove(Some(Coords{q: -1, r: -3}), Some(Dir::Orient0), false);
 
-        // let mut search_order: Vec<Dir> = Dir::get_iter().collect();
-        // let mut rng = thread_rng();
-        // search_order.shuffle(&mut rng);
+        let mut search_order: Vec<Dir> = Dir::get_iter().collect();
+        let mut rng = thread_rng();
+        search_order.shuffle(&mut rng);
 
-        // // make a list of all the coordinates we know about
-        // let mut known_coords: Vec<Coords> = Vec::new();
-        // for known_cell in &robot.known_cells {
-        //     known_coords.push(Coords{ q: known_cell.q, r: known_cell.r });
-        // }
+        // make a list of all the coordinates we know about
+        let mut known_coords: Vec<Coords> = Vec::new();
+        for known_cell in &robot.known_cells {
+            known_coords.push(Coords{ q: known_cell.q, r: known_cell.r });
+        }
 
-        // // known_coords.shuffle(&mut rng);
-        // for cell_coords in &known_coords {
-        //     let grid = robot.grid.lock().unwrap();
-        //     let cell = grid.cells.get(&cell_coords);
-        //     if let None = cell {
-        //         continue;
-        //     }
+        // known_coords.shuffle(&mut rng);
+        for cell_coords in &known_coords {
+            let grid = robot.grid.lock().unwrap();
+            let cell = grid.cells.get(&cell_coords);
+            if let None = cell {
+                continue;
+            }
 
-        //     // check the edges in random order; if open, see if know the cell beyond it
-        //     for orientation in &search_order {
-        //         if cell.unwrap().get_side(*orientation) != EdgeType::Wall {
-        //             let test_coords = cell_coords.to(orientation, 1);
-        //             if !known_coords.contains(&test_coords) {
-        //                 return ProcessResult::TransitionToMove(Some(cell_coords.clone()), Some(*orientation), false);
-        //             }
-        //         }
-        //     }
-        // }
+            // check the edges in random order; if open, see if know the cell beyond it
+            for orientation in &search_order {
+                if cell.unwrap().get_side(*orientation) != EdgeType::Wall {
+                    let test_coords = cell_coords.to(orientation, 1);
+                    if !known_coords.contains(&test_coords) {
+                        return ProcessResult::TransitionToMove(Some(cell_coords.clone()), Some(*orientation), false);
+                    }
+                }
+            }
+        }
 
-        // ProcessResult::Ok
+        ProcessResult::Ok
     }
 }

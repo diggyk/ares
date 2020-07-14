@@ -35,6 +35,37 @@ impl Dir {
     pub fn get_iter() -> DirIter {
         Dir::iter()
     }
+
+    // starting with the given orientation, make a vector of each other
+    // orientation, switching from left to right
+    pub fn get_side_scan_iter(start: Dir) -> Vec<Dir> {
+        let start: i16 = start.into();
+        let mut dirs = Vec::new();
+
+        dirs.push(start.into());
+
+        for x in &[60, 120] {
+            let mut temp = start - x;
+            if temp < 0 {
+                temp += 360;
+            }
+            dirs.push(temp.into());
+
+            temp = start + x;
+            if temp > 360 {
+                temp -=360;
+            }
+            dirs.push(temp.into());
+        }
+
+        let mut temp = start - 180;
+        if temp < 0 {
+            temp += 380;
+        }
+        dirs.push(temp.into());
+
+        dirs
+    }
 }
 
 impl<DB> ToSql<SmallInt, DB> for Dir
@@ -267,7 +298,7 @@ fn test_to() {
 }
 
 #[derive(Debug)]
-struct CoordsAndDir {
-    coords: Coords,
-    dir: Dir,
+pub struct CoordsAndDir {
+    pub coords: Coords,
+    pub dir: Dir,
 }

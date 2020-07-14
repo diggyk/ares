@@ -84,35 +84,47 @@ struct FromStep {
 impl Move {
     /// Get a depth and directional map from starting to end coords
     fn flood_map(
-        starting_coords: &Coords, target_coords: &Coords, known_cells_full: HashMap<Coords, &GridCell>
+        starting_coords: &Coords, 
+        starting_orientation: &Dir, 
+        target_coords: &Coords, 
+        known_cells_full: HashMap<Coords, &GridCell>
     ) -> HashMap<Coords, FromStep> {
-        let mut frontier: Vec<Coords> = Vec::new();
-        frontier.push(starting_coords.clone());
+
+        // frontier holds the cells we've discovered that need to be explored
+        let mut frontier: Vec<CoordsAndDir> = Vec::new();
+        frontier.push(CoordsAndDir{
+            coords: starting_coords.clone(), 
+            dir: starting_orientation.clone(),
+        });
+
         let mut came_from: HashMap<Coords, FromStep> = HashMap::new();
         came_from.insert(starting_coords.clone(), FromStep{coords: starting_coords.clone(), dir: Dir::Orient0});
 
         while frontier.len() != 0 {
-            let current = frontier.pop().unwrap();
-            if &current == target_coords {
+            let current = frontier.remove(0);
+            if &current.coords == target_coords {
                 break;
             }
             
             // for each edge, see if it is open and see if it is a known cell
             // and if it is, add it to the frontier
-            let cell = known_cells_full.get(&current).unwrap();
-            for orientation in Dir::get_iter() {
+            let cell = known_cells_full.get(&current.coords).unwrap();
+            for orientation in Dir::get_side_scan_iter(current.dir) {
                 // if the side isn't a wall...
                 if cell.get_side(orientation) != EdgeType::Wall {
-                    let new_coords = current.to(&orientation, 1);
+                    let new_coords = current.coords.to(&orientation, 1);
                     // if we've seen this cell, don't re add
                     if let Some(_) = came_from.get(&new_coords) {
                         continue;
                     }
 
                     if let Some(_) = known_cells_full.get(&new_coords) {
-                        frontier.push(new_coords.clone());
+                        frontier.push(CoordsAndDir{
+                            coords: new_coords.clone(),
+                            dir: orientation,
+                        });
                         let from_step = FromStep {
-                            coords: current.clone(),
+                            coords: current.coords.clone(),
                             dir: orientation,
                         };
                         came_from.insert(new_coords, from_step);
@@ -168,12 +180,11 @@ impl Move {
             }
         }
 
-        
         let starting_coords = Coords{q: robot.data.r, r: robot.data.r};
         
         // start with our target cell
         let came_from: HashMap<Coords, FromStep> = Move::flood_map(
-            &starting_coords, &target_coords, known_cells_full
+            &starting_coords, &robot.data.orientation, &target_coords, known_cells_full
         );
         
         let mut path: Vec<&FromStep> = Vec::new();
