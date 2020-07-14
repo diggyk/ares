@@ -63,7 +63,7 @@ impl Server {
 
             // Wait for remained of the tick time
             if let Ok(elapse) = last_tick.elapsed() {
-                let sleep_time = std::time::Duration::from_secs(1) - elapse;
+                let sleep_time = std::time::Duration::from_secs(4) - elapse;
                 std::thread::sleep(sleep_time);
                 last_tick = SystemTime::now();
             } else {

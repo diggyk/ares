@@ -265,3 +265,9 @@ fn test_to() {
     assert_eq!(coords5, Coords{q: -2, r: 0});
     assert_eq!(coords6, Coords{q: -32, r: 32});
 }
+
+#[derive(Debug)]
+struct CoordsAndDir {
+    coords: Coords,
+    dir: Dir,
+}

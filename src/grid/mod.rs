@@ -2,9 +2,7 @@ pub mod coords;
 pub mod edge;
 pub mod grid;
 
-pub use coords::Coords;
-pub use coords::CoordsKind;
-pub use coords::Dir;
+pub use coords::*;
 
 pub use edge::EdgeType;
 

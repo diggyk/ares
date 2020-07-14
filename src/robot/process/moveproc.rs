@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use super::*;
 use super::ProcessResult;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum MoveStep {
     Forward,
     Left,
@@ -19,25 +19,48 @@ impl Process for Move {
     fn run(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
         println!("Move: run");
         // Take the next X moves based on the drive system
-        
+        if let Some(queue) = &mut robot.movement_queue {
+            if !queue.is_empty() {
+                println!("Move queue: {:#?}", queue);
+                println!("Move step: {:#?}", queue.remove(0));
+            }
+        }
+
         let mut scanned_cells: Vec<Coords> = Vec::new();
         if let ProcessResult::ScannedCells(cells) = Scan::run(conn, robot, None) {
             scanned_cells = cells;
         }
         println!("Scanned {} cells", scanned_cells.len());
 
-        ProcessResult::TransitionToNeutral
+        if robot.movement_queue.is_none() || robot.movement_queue.as_ref().unwrap().is_empty() {
+            robot.movement_queue = None;
+            return ProcessResult::TransitionToNeutral;
+        } else {
+            return ProcessResult::Ok;
+        }
     }
 
     fn init(conn: &PgConnection, robot: &mut Robot, message: Option<ProcessResult>) -> ProcessResult {
         println!("Transition to Move");
+
+        robot.movement_queue = None;
+
+        let robot_coords = Coords{ q: robot.data.q, r: robot.data.r };
 
         if let Some(proc_result) = message {
             match proc_result {
                 ProcessResult::TransitionToMove(target_coords, orientation, spin) => {
                     println!("Transition to {:?}, {:?}, {:?}", &target_coords, &orientation, spin);
                     if let Some(target_coords) = target_coords {
-                        println!("{:#?}", Move::find_path(conn, robot, target_coords));
+                        if target_coords == robot_coords {
+                            if orientation.is_some() {
+                                robot.movement_queue = Some(Move::find_spin(robot.data.orientation, orientation.unwrap()));
+                            }
+                        } else {
+                            robot.movement_queue = Some(Move::find_path(conn, robot, target_coords));
+                        }
+                    } else {
+                        // TODO: we might want to spin or just change orientation
                     }
                 },
                 _ => {
@@ -62,11 +85,11 @@ impl Move {
     /// Get a depth and directional map from starting to end coords
     fn flood_map(
         starting_coords: &Coords, target_coords: &Coords, known_cells_full: HashMap<Coords, &GridCell>
-    ) -> HashMap<Coords, Option<FromStep>> {
+    ) -> HashMap<Coords, FromStep> {
         let mut frontier: Vec<Coords> = Vec::new();
         frontier.push(starting_coords.clone());
-        let mut came_from: HashMap<Coords, Option<FromStep>> = HashMap::new();
-        came_from.insert(starting_coords.clone(), None);
+        let mut came_from: HashMap<Coords, FromStep> = HashMap::new();
+        came_from.insert(starting_coords.clone(), FromStep{coords: starting_coords.clone(), dir: Dir::Orient0});
 
         while frontier.len() != 0 {
             let current = frontier.pop().unwrap();
@@ -92,13 +115,43 @@ impl Move {
                             coords: current.clone(),
                             dir: orientation,
                         };
-                        came_from.insert(new_coords, Some(from_step));
+                        came_from.insert(new_coords, from_step);
                     }
                 }
             }
         }
 
         came_from
+    }
+
+    /// add the steps to spin from one orientation to the other
+    fn find_spin(start_orientation: Dir, end_orientation: Dir) -> Vec<MoveStep> {
+        let mut steps = Vec::new();
+
+        let a1: i16 = start_orientation.into();
+        let mut a2: i16 = end_orientation.into();
+
+        println!("a1: {}  a2: {}", a1, a2);
+
+        a2 -= a1;
+        if a2 > 180 {
+            a2 -= 360;
+        } else if a2 < -180{
+            a2 += 360;
+        }
+
+        println!("a1: 0  a2: {}", a2);
+        while a2 != 0 {
+            if a2 < 0 {
+                steps.push(MoveStep::Left);
+                a2 += 60;
+            } else {
+                steps.push(MoveStep::Right);
+                a2 -= 60;
+            }
+        }
+
+        steps
     }
 
     fn find_path(_: &PgConnection, robot: &mut Robot, target_coords: Coords) -> Vec<MoveStep> {
@@ -115,18 +168,17 @@ impl Move {
             }
         }
 
+        
         let starting_coords = Coords{q: robot.data.r, r: robot.data.r};
-        let came_from: HashMap<Coords, Option<FromStep>> = Move::flood_map(
+        
+        // start with our target cell
+        let came_from: HashMap<Coords, FromStep> = Move::flood_map(
             &starting_coords, &target_coords, known_cells_full
         );
-
-        println!("All came_from {:#?}", came_from);
-
+        
         let mut path: Vec<&FromStep> = Vec::new();
 
-        println!("Came from: {:#?}", came_from.get(&target_coords));
-
-        let current = match came_from.get(&target_coords) {
+        let mut current = match came_from.get(&target_coords) {
             Some(op_fromstep) => op_fromstep,
             None => {
                 println!("Error: couldn't find the target coords in the depth map");
@@ -134,40 +186,52 @@ impl Move {
             },
         };
 
-        println!("{:#?}", current);
-
-        let mut current = match current {
-            Some(current) => current,
-            None => {
-                println!("Y");
-                return steps
-            },
-        };
-
         while current.coords != starting_coords  {
             path.push(current);
-            let next_step = match came_from.get(&current.coords) {
+            current = match came_from.get(&current.coords) {
                 Some(op_fromstep) => op_fromstep,
                 None => {
                     println!("Z");
                     return steps
                 },
             };
-
-            current = match next_step {
-                Some(current) => current,
-                None => {
-                    println!("ZZ");
-                    return steps
-                },
-            };
         }
 
-        println!("{:#?}", path);
+        path.push(current);
+        path.reverse();
 
+        
         println!("{:?} to {:?}", starting_coords, target_coords);
-        println!("{:#?}", came_from);
+        for step in &path {
+            print!("({},{}) @ {:?} -> ", step.coords.q, step.coords.r, step.dir);
+        }
+        println!("{}", path.len());
+        // println!("{:#?}", came_from);
 
         steps
     }
+}
+
+#[cfg(test)]
+#[test]
+fn test_spins() {
+    assert_eq!(
+        Move::find_spin(Dir::Orient0, Dir::Orient300),
+        [MoveStep::Left]
+    );
+
+    assert_eq!(
+        Move::find_spin(Dir::Orient120, Dir::Orient0),
+        [MoveStep::Left, MoveStep::Left]
+    );
+
+    assert_eq!(
+        Move::find_spin(Dir::Orient240, Dir::Orient0),
+        [MoveStep::Right, MoveStep::Right]
+    );
+
+    assert_eq!(
+        Move::find_spin(Dir::Orient60, Dir::Orient240),
+        [MoveStep::Right, MoveStep::Right, MoveStep::Right]
+    );
 }

@@ -16,7 +16,7 @@ impl Process for Scan {
         let grid = robot.grid.lock().unwrap();
 
         // For now, let's scan in a 120 for distance of 2
-        let cells = grid.get_cells(our_coords, robot.data.orientation, 360, 2);
+        let cells = grid.get_cells(our_coords, robot.data.orientation, 120, 2);
 
         let mut known_cells: Vec<RobotKnownCell> = Vec::new();
         let mut scanned_cells: Vec<Coords> = Vec::new();
