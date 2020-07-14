@@ -13,7 +13,7 @@ pub struct ServerConfig {
     // maximum number of robots to spawn
     max_bots: usize,
     // how quickly to regen robots
-    regen_rate: usize,
+    // regen_rate: usize,
 } 
 
 pub fn get_config() -> ServerConfig {
@@ -58,13 +58,13 @@ pub fn get_config() -> ServerConfig {
         let max_bots = matches.value_of("max_bots").unwrap_or("10");
         let max_bots = max_bots.parse::<usize>().expect("Could not parse max bots");
 
-        let regen_rate = matches.value_of("regen_rate").unwrap_or("1");
-        let regen_rate = regen_rate.parse::<usize>().expect("Could not parse regen rate");
+        // let regen_rate = matches.value_of("regen_rate").unwrap_or("1");
+        // let regen_rate = regen_rate.parse::<usize>().expect("Could not parse regen rate");
 
         let dbconfig = DbConfig{dbuser, dbpw, dbhost, dbname};
         let conn = establish_connection(&dbconfig);
 
         ServerConfig {
-            dbconfig, conn, max_bots, regen_rate,
+            dbconfig, conn, max_bots,
         }
 }

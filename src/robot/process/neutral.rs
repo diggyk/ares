@@ -10,7 +10,8 @@ pub struct Neutral {}
 /// The "Neutral" process is when there is no active fleeing, mining, or exploring going on
 impl Process for Neutral {
     /// Main run of the Neutral process
-    fn run(conn: &PgConnection, robot: &mut Robot, message: Option<ProcessResult>) -> ProcessResult {
+    fn run(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
+        println!("Neutral: run");
         let mut scanned_cells: Vec<Coords> = Vec::new();
         if let ProcessResult::ScannedCells(cells) = Scan::run(conn, robot, None) {
             scanned_cells = cells;
@@ -31,6 +32,12 @@ impl Process for Neutral {
 
         Neutral::next(robot)
     }
+
+    // initialize this process
+    fn init(_: &PgConnection, _: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
+        println!("Transition to Neutral");
+        ProcessResult::Ok
+    }
 }
 
 impl Neutral {
@@ -45,8 +52,8 @@ impl Neutral {
         let mut rng = thread_rng();
         search_order.shuffle(&mut rng);
 
+        // make a list of all the coordinates we know about
         let mut known_coords: Vec<Coords> = Vec::new();
-
         for known_cell in &robot.known_cells {
             known_coords.push(Coords{ q: known_cell.q, r: known_cell.r });
         }
@@ -62,8 +69,8 @@ impl Neutral {
             for orientation in &search_order {
                 if cell.unwrap().get_side(*orientation) != EdgeType::Wall {
                     let test_coords = cell_coords.to(orientation, 1);
-                    if !known_coords.contains(&test_coords) {
-                        return ProcessResult::TransitionToMove(Some(test_coords), Some(*orientation), false);
+                    if known_coords.contains(&test_coords) {
+                        return ProcessResult::TransitionToMove(Some(cell_coords.clone()), Some(*orientation), false);
                     }
                 }
             }

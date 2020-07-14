@@ -1,6 +1,6 @@
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
-use std::sync::{Arc, Mutex};
+// use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 
 use crate::grid::*;
@@ -11,12 +11,12 @@ use super::*;
 pub struct Scan {}
 
 impl Process for Scan {
-    fn run(conn: &PgConnection, robot: &mut Robot, message: Option<ProcessResult>) -> ProcessResult {
+    fn run(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
         let our_coords = Coords{ q: robot.data.q, r: robot.data.r };
         let grid = robot.grid.lock().unwrap();
 
         // For now, let's scan in a 120 for distance of 2
-        let cells = grid.get_cells(our_coords, robot.data.orientation, 120, 2);
+        let cells = grid.get_cells(our_coords, robot.data.orientation, 360, 2);
 
         let mut known_cells: Vec<RobotKnownCell> = Vec::new();
         let mut scanned_cells: Vec<Coords> = Vec::new();
@@ -46,5 +46,10 @@ impl Process for Scan {
         robot.known_cells = known_cells;
 
         ProcessResult::ScannedCells(scanned_cells)
+    }
+
+    // transition 
+    fn init(_: &PgConnection, _: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
+        ProcessResult::Ok
     }
 }

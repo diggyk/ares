@@ -1,8 +1,10 @@
 use diesel::PgConnection;
 
+mod moveproc;
 mod neutral;
 mod scan;
 
+pub use moveproc::*;
 pub use neutral::Neutral;
 pub use scan::Scan;
 
@@ -11,7 +13,7 @@ use super::Robot;
 
 
 /// Message returned from a process run to let robot know what to do next
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ProcessResult {
     /// Ok means the process succeeded and should remain the active process
     Ok,
@@ -19,6 +21,8 @@ pub enum ProcessResult {
     Fail,
     /// Result of a scan
     ScannedCells(Vec<Coords>),
+    /// Transition back to the neutral mode
+    TransitionToNeutral,
     /// Indicate a switch to Move; the last bool means to spin 180 at the end
     TransitionToMove(Option<Coords>, Option<Dir>, bool),
 }
@@ -26,6 +30,7 @@ pub enum ProcessResult {
 /// List of all the processes with helpers to run the process
 #[derive(Debug)]
 pub enum Processes {
+    Move,
     Neutral,
     Scan,
 }
@@ -33,4 +38,5 @@ pub enum Processes {
 /// Trait to define a process
 pub trait Process {
     fn run(conn: &PgConnection, robot: &mut Robot, message: Option<ProcessResult>) -> ProcessResult;
+    fn init(conn: &PgConnection, robot: &mut Robot, message: Option<ProcessResult>) -> ProcessResult;
 }

@@ -4,7 +4,7 @@ use rand::Rng;
 use std::collections::HashMap;
 
 use crate::schema::*;
-use crate::utils::*;
+// use crate::utils::*;
 use super::coords::*;
 use super::edge::EdgeType;
 
@@ -52,6 +52,7 @@ impl GridCell {
         || self.edge300 != EdgeType::Wall
     }
 
+    /// Get the side of the cell based on orientation
     pub fn get_side(&self, orientation: Dir) -> EdgeType {
         match orientation {
             Dir::Orient0 => self.edge0,
@@ -232,7 +233,6 @@ impl Grid {
 
         // add our current cell
         if let Some(cell) = self.cells.get(&start_coords) {
-            println!("Adding: {}, {}", start_coords.q, start_coords.r);
             found_cells.push(cell);
         }
 
@@ -244,17 +244,20 @@ impl Grid {
             let mut scan_dir = start_arm_dir.right(60);
 
             if let Some(cell) = self.cells.get(&coord) {
-                println!("Adding start for r {}: {}, {}", r, coord.q, coord.r);
                 found_cells.push(cell);
             }
 
-            for _ in (0..fov).step_by(60) {
+            for step in (0..fov).step_by(60) {
                 scan_dir = scan_dir.right(60);
-                println!("Turn to {:?}", scan_dir);
-                for _ in 1..r+1 {
+
+                // if we are doing a 360 scan, we don't want duplicates so...
+                let mut total_steps = r + 1;
+                if step == 300 {
+                    total_steps = r;
+                }
+                for _ in 1..total_steps {
                     coord = coord.to(&scan_dir, 1);
                     if let Some(cell) = self.cells.get(&coord) {
-                        println!("Adding: {}, {}", coord.q, coord.r);
                         found_cells.push(cell);
                     }
                 }
@@ -265,11 +268,10 @@ impl Grid {
     }
 
     /// Is a coord visible from another place
-    pub fn is_visible(&self, start_coords: Coords, end_coords: Coords) -> bool {
+    pub fn is_visible(&self, _start_coords: Coords, _end_coords: Coords) -> bool {
         // calculate the angle from the x+ horizontal line b/c verticle lines have no slope
         // let p1: CoordsKind = start_coords.to_flat2d();
         // let p2: CoordsKind = end_coords.to_flat2d();
-
         true
     }
 }
@@ -280,4 +282,9 @@ fn test_cell_creation() {
     let grid = Grid::new(2, None).unwrap();
 
     assert_eq!(19, grid.cells.len());
+    assert_eq!(3, grid.get_cells(Coords{q:0,r:0}, Dir::Orient0, 0, 2).len());
+    assert_eq!(6, grid.get_cells(Coords{q:0,r:0}, Dir::Orient0, 240, 1).len());
+    assert_eq!(9, grid.get_cells(Coords{q:0,r:0}, Dir::Orient0, 120, 2).len());
+    assert_eq!(15, grid.get_cells(Coords{q:0,r:0}, Dir::Orient0, 240, 2).len());
+    assert_eq!(19, grid.get_cells(Coords{q:0,r:0}, Dir::Orient0, 360, 2).len());
 }

@@ -65,6 +65,7 @@ pub struct Robot {
     pub data: RobotData,
     pub known_cells: Vec<RobotKnownCell>,
     pub active_process: Option<Processes>,
+    pub movement_queue: Option<Vec<MoveStep>>,
 }
 
 impl Robot {
@@ -80,6 +81,7 @@ impl Robot {
                 data: result,
                 known_cells: RobotKnownCell::load_all(conn, id),
                 active_process: None,
+                movement_queue: None,
             };
 
             if let Ok(known_cells) = robot_known_cells::table.filter(
@@ -127,6 +129,7 @@ impl Robot {
             data: _robot,
             known_cells: Vec::new(),
             active_process: None,
+            movement_queue: None,
         }
     }
 
@@ -139,12 +142,24 @@ impl Robot {
         let process = self.active_process.as_ref().unwrap().clone();
 
         let result = match process {
+            Processes::Move => Move::run(conn, self, None),
             Processes::Neutral => Neutral::run(conn, self, None),
             Processes::Scan => ProcessResult::Ok,
         };
 
         println!("{:?}", result);
 
-        // TODO: Do something with the result to figure out what's next
+        match result {
+            ProcessResult::TransitionToMove{..} => {
+                if Move::init(conn, self, Some(result)) == ProcessResult::Ok {
+                    self.active_process = Some(Processes::Move);
+                }
+            }
+            ProcessResult::TransitionToNeutral => {
+                Neutral::init(conn, self, Some(result));
+                self.active_process = Some(Processes::Neutral);
+            }
+            _ => {},
+        }
     }
 }
