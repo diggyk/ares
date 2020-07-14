@@ -215,6 +215,7 @@ impl Grid {
         Coords {q: cell.q, r: cell.r}
     }
 
+    /// Given a starting point, direction, field of view and distance, get the cells in this range
     pub fn get_cells(&self, start_coords: Coords, dir: Dir, fov: i32, distance: i32) -> Vec<&GridCell> {
         let mut found_cells = Vec::new();
 
@@ -250,6 +251,15 @@ impl Grid {
         }
 
         found_cells
+    }
+
+    /// Is a coord visible from another place
+    pub fn is_visible(&self, start_coords: Coords, end_coords: Coords) -> bool {
+        // calculate the angle from the x+ horizontal line b/c verticle lines have no slope
+        let p1 = start_coords.to_flat2d();
+        let p2 = end_coords.to_flat2d();
+
+        true
     }
 }
 

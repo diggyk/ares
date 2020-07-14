@@ -33,6 +33,7 @@ pub struct RobotData {
     pub configs: Option<serde_json::Value>,
 }
 
+/// Represents a grid cell that is known by a robot
 #[derive(Debug, Queryable, Insertable)]
 #[table_name="robot_known_cells"]
 pub struct RobotKnownCell {
@@ -41,6 +42,22 @@ pub struct RobotKnownCell {
     pub discovery_time: std::time::SystemTime,
 }
 
+impl RobotKnownCell {
+    /// Load all the known grid cells for a robot out of memory
+    pub fn load_all(conn: &PgConnection, robot_id: i64) -> Vec<RobotKnownCell> {
+        let results = robot_known_cells::table
+            .filter(robot_known_cells::robot_id
+            .eq(robot_id)).load::<RobotKnownCell>(conn);
+
+        if let Ok(cells) = results {
+            cells
+        } else {
+            Vec::new()
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct Robot {
     pub grid: Arc<Mutex<Grid>>,
     pub data: RobotData,
@@ -59,7 +76,7 @@ impl Robot {
             let mut robot = Robot {
                 grid: grid.clone(),
                 data: result,
-                known_cells: Vec::new(),
+                known_cells: RobotKnownCell::load_all(conn, id),
                 active_process: None,
             };
 

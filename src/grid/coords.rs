@@ -14,6 +14,7 @@ use rand::{
 pub enum CoordsKind {
     Axial {q: i32, r: i32},
     Cube {x: i32, y: i32, z: i32},
+    Flat2D {x: f64, y: f64},
 }
 
 #[repr(i16)]
@@ -174,6 +175,18 @@ impl Coords {
 
     pub fn to_cube(&self) -> CoordsKind {
         CoordsKind::Cube{x: self.q, y: self.r, z: 0 - self.q - self.r}
+    }
+
+    // this conversion is to map the center of the cells onto a standard
+    // flat plan with an x and y axis
+    pub fn to_flat2d(&self) -> CoordsKind {
+        let q = self.q as f64;
+        let r = self.r as f64;
+
+        let x = (2.0/3f64.sqrt() + 1.0/3f64.sqrt())*q;
+        let y = q + r * 2.0;
+
+        CoordsKind::Flat2D{x, y}
     }
 
     pub fn to(&self, dir: &Dir, dist: i32) -> Coords {
