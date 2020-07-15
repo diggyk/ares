@@ -4,7 +4,6 @@ use rand::Rng;
 use std::collections::HashMap;
 
 use crate::schema::*;
-// use crate::utils::*;
 use super::coords::*;
 use super::edge::EdgeType;
 
@@ -265,6 +264,12 @@ impl Grid {
         }
 
         found_cells
+    }
+
+    /// Change the robot location
+    pub fn update_robot_loc(&mut self, id: i64, old_coords: Coords, new_coords: Coords) {
+        self.robot_locs.remove(&old_coords);
+        self.robot_locs.insert(new_coords.clone(), id);
     }
 
     /// Is a coord visible from another place

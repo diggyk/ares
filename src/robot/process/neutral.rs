@@ -49,7 +49,7 @@ impl Neutral {
 
     fn goto_random_unexplored_cell(robot: &Robot) -> ProcessResult {
 
-        // return ProcessResult::TransitionToMove(Some(Coords{q: -1, r: -3}), Some(Dir::Orient0), false);
+        // return ProcessResult::TransitionToMove(Coords{q: 2, r: -1}, Dir::Orient0, false);
 
         let mut search_order: Vec<Dir> = Dir::get_iter().collect();
         let mut rng = thread_rng();
@@ -74,7 +74,7 @@ impl Neutral {
                 if cell.unwrap().get_side(*orientation) != EdgeType::Wall {
                     let test_coords = cell_coords.to(orientation, 1);
                     if !known_coords.contains(&test_coords) {
-                        return ProcessResult::TransitionToMove(Some(cell_coords.clone()), Some(*orientation), false);
+                        return ProcessResult::TransitionToMove(cell_coords.clone(), *orientation, false);
                     }
                 }
             }

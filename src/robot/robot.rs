@@ -17,7 +17,7 @@ pub struct NewRobot {
     pub orientation: Dir,
 }
 
-#[derive(Debug, Queryable, Insertable)]
+#[derive(Debug, Queryable, Identifiable, Insertable)]
 #[table_name="robots"]
 pub struct RobotData {
     pub id: i64,
@@ -131,6 +131,102 @@ impl Robot {
             active_process: None,
             movement_queue: None,
         }
+    }
+
+    /// Update the orientation on turn left
+    pub fn turn_left(&mut self, conn: &PgConnection) {
+        let orientation = self.data.orientation.left(60);
+        self.data.orientation = orientation;
+
+        let _ = diesel::update(
+            robots::table.filter(robots::id.eq(self.data.id))
+        ).set(robots::orientation.eq(&orientation)).execute(conn);
+    }
+
+    /// Update the orientation on turn right
+    pub fn turn_right(&mut self, conn: &PgConnection) {
+        let orientation = self.data.orientation.right(60);
+        self.data.orientation = orientation;
+
+        let _ = diesel::update(
+            robots::table.filter(robots::id.eq(self.data.id))
+        ).set(robots::orientation.eq(&orientation)).execute(conn);
+    }
+
+    /// Take a single step forward and return new coords
+    pub fn move_forward(&mut self) -> Coords {
+        let orientation = self.data.orientation;
+        let new_coords = Coords{ q: self.data.q, r: self.data.r }.to(&orientation, 1);
+        new_coords
+    }
+
+    /// get the next step from the movement queue
+    pub fn get_move(&mut self) -> Option<MoveStep> {
+        if self.movement_queue.is_none() {
+            return None;
+        }
+
+        let queue = self.movement_queue.as_mut().unwrap();
+        if queue.len() == 0 {
+            self.movement_queue = None;
+            return None;
+        }
+
+        Some(queue.remove(0))
+    }
+
+    /// empty out the movement queue
+    pub fn empty_movement_queue(&mut self) {
+        self.movement_queue = None;
+    }
+
+    /// Try to move a robot
+    /// 
+    /// If moving the robot forward, 1) make sure there isn't a wall, and 2) make sure the
+    /// cell isn't occupied; if this conditions fail, return a Fail
+    /// Then update the robot's position or orientation and update grid's `robot_locs` 
+    pub fn move_robot(&mut self, conn: &PgConnection) -> ProcessResult {
+        let robot_coords = &Coords{q: self.data.q, r: self.data.r};
+        let orientation = self.data.orientation;
+        let next_step = self.get_move();
+
+        println!("Move: ({},{}) @ {:?}  => {:?}", robot_coords.q, robot_coords.r, orientation, next_step);
+
+        if next_step.is_none() {
+            return ProcessResult::Fail;
+        }
+
+        match next_step.unwrap() {
+            MoveStep::Left => {
+                self.turn_left(conn);
+            },
+            MoveStep::Right => {
+                self.turn_right(conn);
+            },
+            MoveStep::Forward => {
+                let grid = self.grid.lock().unwrap();
+                let cell = grid.cells.get(robot_coords);
+                if cell.is_none() {
+                    return ProcessResult::Fail;
+                }
+
+                if cell.unwrap().get_side(orientation) == EdgeType::Wall {
+                    return ProcessResult::Fail;
+                }
+
+                if grid.robot_locs.get(&robot_coords.to(&orientation, 1)).is_some() {
+                    return ProcessResult::Fail;
+                }
+
+                drop(grid);
+
+                let new_robot_coords = self.move_forward().clone();
+                let mut grid = self.grid.lock().unwrap();
+
+                grid.update_robot_loc(self.data.id, robot_coords.clone(), new_robot_coords);
+            },
+        }
+        ProcessResult::Ok
     }
 
     /// Handles a tick 

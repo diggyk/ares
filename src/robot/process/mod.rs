@@ -24,7 +24,7 @@ pub enum ProcessResult {
     /// Transition back to the neutral mode
     TransitionToNeutral,
     /// Indicate a switch to Move; the last bool means to spin 180 at the end
-    TransitionToMove(Option<Coords>, Option<Dir>, bool),
+    TransitionToMove(Coords, Dir, bool),
 }
 
 /// List of all the processes with helpers to run the process
