@@ -34,7 +34,7 @@ pub struct RobotData {
 }
 
 /// Represents a grid cell that is known by a robot
-#[derive(Debug, Queryable, Insertable)]
+#[derive(Clone, Debug, Queryable, Insertable)]
 #[table_name="robot_known_cells"]
 pub struct RobotKnownCell {
     pub robot_id: i64,
@@ -56,6 +56,16 @@ impl RobotKnownCell {
         } else {
             Vec::new()
         }
+    }
+}
+
+impl PartialEq for RobotKnownCell {
+    fn eq(&self, other: &Self) -> bool {
+        let does_match = self.robot_id == other.robot_id 
+            && self.gridcell_id == other.gridcell_id
+            && self.q == other.q && self.r == other.q;
+
+        does_match
     }
 }
 
@@ -133,6 +143,11 @@ impl Robot {
         }
     }
 
+    /// print id and status text
+    pub fn ident(&self) {
+        println!("Robot {}: ({},{}) @ {:?}", self.data.id, self.data.q, self.data.r, self.data.orientation);
+    }
+
     /// Update the orientation on turn left
     pub fn turn_left(&mut self, conn: &PgConnection) {
         let orientation = self.data.orientation.left(60);
@@ -154,9 +169,16 @@ impl Robot {
     }
 
     /// Take a single step forward and return new coords
-    pub fn move_forward(&mut self) -> Coords {
+    pub fn move_forward(&mut self, conn: &PgConnection) -> Coords {
         let orientation = self.data.orientation;
         let new_coords = Coords{ q: self.data.q, r: self.data.r }.to(&orientation, 1);
+        self.data.q = new_coords.q;
+        self.data.r = new_coords.r;
+
+        let _ = diesel::update(
+            robots::table.filter(robots::id.eq(self.data.id))
+        ).set((robots::q.eq(self.data.q), robots::r.eq(self.data.r))).execute(conn);
+
         new_coords
     }
 
@@ -180,6 +202,29 @@ impl Robot {
         self.movement_queue = None;
     }
 
+    /// Update known cells with new scans
+    pub fn update_known_cells(&mut self, new_cells: Vec<RobotKnownCell>) {
+        let mut new_known_cells: Vec<RobotKnownCell> = Vec::new();
+        for cell in &self.known_cells {
+            let mut found = false;
+            for cell2 in &new_cells {
+                if cell.robot_id == cell2.robot_id && cell.gridcell_id == cell2.gridcell_id {
+                    found = true;
+                    continue;
+                }
+            }
+            if !found {
+                new_known_cells.push(cell.clone());
+            }
+        }
+        for cell in new_cells {
+            new_known_cells.push(cell);
+        }
+
+        self.known_cells = new_known_cells;
+        println!("Known cells: {}", self.known_cells.len());
+    }
+
     /// Try to move a robot
     /// 
     /// If moving the robot forward, 1) make sure there isn't a wall, and 2) make sure the
@@ -190,7 +235,7 @@ impl Robot {
         let orientation = self.data.orientation;
         let next_step = self.get_move();
 
-        println!("Move: ({},{}) @ {:?}  => {:?}", robot_coords.q, robot_coords.r, orientation, next_step);
+        println!("Move: => {:?}", next_step);
 
         if next_step.is_none() {
             return ProcessResult::Fail;
@@ -220,7 +265,7 @@ impl Robot {
 
                 drop(grid);
 
-                let new_robot_coords = self.move_forward().clone();
+                let new_robot_coords = self.move_forward(conn).clone();
                 let mut grid = self.grid.lock().unwrap();
 
                 grid.update_robot_loc(self.data.id, robot_coords.clone(), new_robot_coords);
@@ -231,6 +276,7 @@ impl Robot {
 
     /// Handles a tick 
     pub fn tick(&mut self, conn: &PgConnection) {
+        self.ident();
         if let None = self.active_process {
             self.active_process = Some(Processes::Neutral);
         }
@@ -242,8 +288,6 @@ impl Robot {
             Processes::Neutral => Neutral::run(conn, self, None),
             Processes::Scan => ProcessResult::Ok,
         };
-
-        println!("{:?}", result);
 
         match result {
             ProcessResult::TransitionToMove{..} => {

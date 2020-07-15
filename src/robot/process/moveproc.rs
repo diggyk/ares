@@ -17,7 +17,6 @@ pub struct Move {}
 impl Process for Move {
     /// Main run of the Neutral process
     fn run(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
-        println!("Move: run");
         // Take the next X moves based on the drive system
         robot.move_robot(conn);
 
@@ -36,7 +35,6 @@ impl Process for Move {
     }
 
     fn init(conn: &PgConnection, robot: &mut Robot, message: Option<ProcessResult>) -> ProcessResult {
-        println!("Transition to Move");
 
         robot.movement_queue = None;
 
@@ -211,7 +209,6 @@ impl Move {
         path.push(current);
         path.reverse();
 
-        println!("{:#?}", path);
         Ok(path)
     }
 
@@ -249,7 +246,7 @@ impl Move {
             }
         }
 
-        let starting_coords = Coords{q: robot.data.r, r: robot.data.r};
+        let starting_coords = Coords{q: robot.data.q, r: robot.data.r};
         
         // Get a flood map so we know how we would get to each cell
         let came_from: HashMap<Coords, FromStep> = Move::flood_map(

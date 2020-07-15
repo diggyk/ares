@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::io::{self, Read};
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 
@@ -48,6 +49,13 @@ impl Server {
         self.robots.insert(robot.data.id, robot);
     }
 
+    fn wait_for_enter(&self) -> std::io::Result<()> {
+        println!("Paused (press enter)...");
+        let mut buffer = String::new();
+        std::io::stdin().read_to_string(&mut buffer)?;
+        Ok(())
+    }
+
     /// The main run loop for the ARES server.  Spawns robots if needed; tick all the robot
     pub fn run(&mut self) {
         let mut last_tick = SystemTime::now();
@@ -56,21 +64,22 @@ impl Server {
                 self.spawn_robot();
             }
 
-            for (id, robot) in &mut self.robots {
-                println!("Tick robot: {}", id);
+            for (_, robot) in &mut self.robots {
                 robot.tick(&self.config.conn);
+                robot.ident();
             }
 
             // Wait for remained of the tick time
             if let Ok(elapse) = last_tick.elapsed() {
-                let sleep_time = std::time::Duration::from_secs(4) - elapse;
+                let sleep_time = std::time::Duration::from_secs(1) - elapse;
                 std::thread::sleep(sleep_time);
                 last_tick = SystemTime::now();
             } else {
                 std::thread::sleep(std::time::Duration::from_secs(1));
                 last_tick = SystemTime::now();
             }
-            println!("Tick!");
+
+            // self.wait_for_enter().expect("Not possible");
         }
     }
 }

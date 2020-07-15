@@ -61,7 +61,7 @@ impl Neutral {
             known_coords.push(Coords{ q: known_cell.q, r: known_cell.r });
         }
 
-        // known_coords.shuffle(&mut rng);
+        known_coords.shuffle(&mut rng);
         for cell_coords in &known_coords {
             let grid = robot.grid.lock().unwrap();
             let cell = grid.cells.get(&cell_coords);
