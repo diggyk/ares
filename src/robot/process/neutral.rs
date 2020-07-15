@@ -48,8 +48,9 @@ impl Neutral {
     }
 
     fn goto_random_unexplored_cell(robot: &Robot) -> ProcessResult {
-
-        // return ProcessResult::TransitionToMove(Coords{q: 2, r: -1}, Dir::Orient0, false);
+        let grid = robot.grid.lock().unwrap();
+        let robot_locs = grid.robot_locs.clone();
+        drop(grid);
 
         let mut search_order: Vec<Dir> = Dir::get_iter().collect();
         let mut rng = thread_rng();
@@ -73,7 +74,9 @@ impl Neutral {
             for orientation in &search_order {
                 if cell.unwrap().get_side(*orientation) != EdgeType::Wall {
                     let test_coords = cell_coords.to(orientation, 1);
-                    if !known_coords.contains(&test_coords) {
+                    if !known_coords.contains(&test_coords)
+                        && robot_locs.contains_key(&test_coords)
+                    {
                         return ProcessResult::TransitionToMove(cell_coords.clone(), *orientation, false);
                     }
                 }
