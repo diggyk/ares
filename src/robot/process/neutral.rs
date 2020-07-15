@@ -80,6 +80,7 @@ impl Neutral {
             }
         }
 
-        ProcessResult::Ok
+        // since we didn't find anything unknown, pick a random place
+        return ProcessResult::TransitionToMove(known_coords.first().unwrap().clone(), Dir::get_iter().next().unwrap(), false);
     }
 }
