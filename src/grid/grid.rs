@@ -27,18 +27,12 @@ impl GridCell {
             id: id,
             q: coords.q,
             r: coords.r,
-            // edge0: EdgeType::Wall,
-            // edge60: EdgeType::Wall,
-            // edge120: EdgeType::Wall,
-            // edge180: EdgeType::Wall,
-            // edge240: EdgeType::Wall,
-            // edge300: EdgeType::Wall,
-            edge0: EdgeType::Open,
-            edge60: EdgeType::Open,
-            edge120: EdgeType::Open,
-            edge180: EdgeType::Open,
-            edge240: EdgeType::Open,
-            edge300: EdgeType::Open,
+            edge0: EdgeType::Wall,
+            edge60: EdgeType::Wall,
+            edge120: EdgeType::Wall,
+            edge180: EdgeType::Wall,
+            edge240: EdgeType::Wall,
+            edge300: EdgeType::Wall,
         }
     }
 
@@ -61,6 +55,17 @@ impl GridCell {
             Dir::Orient240 => self.edge240,
             Dir::Orient300 => self.edge300,
         }
+    }
+
+    pub fn change_side(&mut self, orientation: &Dir, edge_type: EdgeType) {
+        match orientation {
+            Dir::Orient0 => self.edge0 = edge_type,
+            Dir::Orient60 => self.edge60 = edge_type,
+            Dir::Orient120 => self.edge120 = edge_type,
+            Dir::Orient180 => self.edge180 = edge_type,
+            Dir::Orient240 => self.edge240 = edge_type,
+            Dir::Orient300 => self.edge300 = edge_type,
+        };
     }
 }
 
@@ -102,33 +107,7 @@ impl Grid {
             return Err(String::from("Improper grid size"))
         }
 
-        let mut cells: HashMap<Coords, GridCell> = HashMap::new();
-        let root_coords = Coords {q: 0, r: 0};
-        let mut cell_count = 0;
-        let root_cell = GridCell::new(cell_count, &root_coords);
-
-        cells.insert(Coords {q: 0, r: 0}, root_cell);
-
-        // for each radius
-        for radius in 1..(size + 1) as i32 {
-            // we start with the bottom left direction at radius distance
-            let mut coords = root_coords.to(&super::Dir::Orient240, radius);
-
-            for angle in (0..360).step_by(60) {
-                // note we never step to angle 360 b/c that's where we started
-                let dir: Dir = (angle as i32).into();
-                for num in 0..radius {
-                    coords = coords.to(&dir, 1);
-                    cell_count += 1;
-                    let mut cell = GridCell::new(cell_count, &coords);
-
-                    if radius == size as i32 {
-                        Grid::enforce_wall(&mut cell, &dir, num == radius - 1);
-                    }
-                    cells.insert(coords.clone(), cell);
-                }
-            }
-        }
+        let cells: HashMap<Coords, GridCell> = super::utils::generate_cells(size as i32);
 
         if let Some(conn) = conn {
             diesel::delete(robots::table).execute(conn).expect("Could not drop gridcells table");
@@ -164,41 +143,6 @@ impl Grid {
                 less_than_guess: Some(5000),
             }
         )
-    }
-
-    fn enforce_wall(cell: &mut GridCell, dir: &Dir, last: bool){
-        match dir {
-            Dir::Orient0 => {
-                if last { cell.edge0 = EdgeType::Wall }
-                cell.edge240 = EdgeType::Wall;
-                cell.edge300 = EdgeType::Wall;
-            },
-            Dir::Orient60 => {
-                if last { cell.edge60 = EdgeType::Wall }
-                cell.edge300 = EdgeType::Wall;
-                cell.edge0 = EdgeType::Wall;
-            },
-            Dir::Orient120 => {
-                if last { cell.edge120 = EdgeType::Wall }
-                cell.edge0 = EdgeType::Wall;
-                cell.edge60 = EdgeType::Wall;
-            },
-            Dir::Orient180 => {
-                if last { cell.edge180 = EdgeType::Wall }
-                cell.edge60 = EdgeType::Wall;
-                cell.edge120 = EdgeType::Wall;
-            },
-            Dir::Orient240 => {
-                if last { cell.edge240 = EdgeType::Wall }
-                cell.edge120 = EdgeType::Wall;
-                cell.edge180 = EdgeType::Wall;
-            },
-            Dir::Orient300 => {
-                if last { cell.edge300 = EdgeType::Wall }
-                cell.edge180 = EdgeType::Wall;
-                cell.edge240 = EdgeType::Wall;
-            }
-        }
     }
 
     pub fn get_random_open_cell(&mut self) -> Coords {

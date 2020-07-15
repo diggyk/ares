@@ -184,6 +184,16 @@ impl Dir {
 
         dirs
     }
+
+    // Get the opposite side
+    pub fn get_opposite(&self) -> Dir {
+        let mut angle: i16 = self.clone().into();
+        angle += 180;
+        if angle > 360 {
+            angle -= 360;
+        }
+        angle.into()
+    }
 }
 
 
