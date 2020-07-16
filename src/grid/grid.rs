@@ -45,6 +45,27 @@ impl GridCell {
         || self.edge300 != EdgeType::Wall
     }
 
+    pub fn is_fully_open(&self) -> bool {
+        self.edge0 != EdgeType::Wall
+        && self.edge60 != EdgeType::Wall
+        && self.edge120 != EdgeType::Wall
+        && self.edge180 != EdgeType::Wall
+        && self.edge240 != EdgeType::Wall
+        && self.edge300 != EdgeType::Wall
+    }
+
+    /// Get the orientations that are walls
+    pub fn get_walls(&self) -> Vec<Dir> {
+        let mut walls: Vec<Dir> = Vec::new();
+        for dir in Dir::get_iter() {
+            if self.get_side(dir) == EdgeType::Wall {
+                walls.push(dir);
+            }
+        }
+
+        walls
+    }
+
     /// Get the side of the cell based on orientation
     pub fn get_side(&self, orientation: Dir) -> EdgeType {
         match orientation {
@@ -228,9 +249,9 @@ impl Grid {
 #[cfg(test)]
 #[test]
 fn test_cell_creation() {
-    let grid = Grid::new(2, None).unwrap();
+    let grid = Grid::new(4, None).unwrap();
 
-    assert_eq!(19, grid.cells.len());
+    assert_eq!(61, grid.cells.len());
     assert_eq!(3, grid.get_cells(Coords{q:0,r:0}, Dir::Orient0, 0, 2).len());
     assert_eq!(6, grid.get_cells(Coords{q:0,r:0}, Dir::Orient0, 240, 1).len());
     assert_eq!(9, grid.get_cells(Coords{q:0,r:0}, Dir::Orient0, 120, 2).len());
