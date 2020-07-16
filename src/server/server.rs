@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::io::Read;
 use std::sync::{Arc, Mutex};
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 
 use crate::grid::Coords;
 use crate::grid::Dir;
@@ -71,11 +71,17 @@ impl Server {
 
             // Wait for remained of the tick time
             if let Ok(elapse) = last_tick.elapsed() {
-                let sleep_time = std::time::Duration::from_secs(1) - elapse;
-                std::thread::sleep(sleep_time);
-                last_tick = SystemTime::now();
+                if elapse < Duration::from_secs(1) {
+                    let sleep_time = std::time::Duration::from_secs(1) - elapse;
+                    std::thread::sleep(sleep_time);
+                    last_tick = SystemTime::now();
+                } else {
+                    println!("{:?}", elapse);
+                    last_tick = SystemTime::now();
+                }
+                std::thread::sleep(Duration::from_secs(1));
             } else {
-                std::thread::sleep(std::time::Duration::from_secs(1));
+                std::thread::sleep(Duration::from_secs(1));
                 last_tick = SystemTime::now();
             }
 
