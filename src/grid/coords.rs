@@ -178,7 +178,7 @@ impl Dir {
 
         let mut temp = start - 180;
         if temp < 0 {
-            temp += 380;
+            temp += 360;
         }
         dirs.push(temp.into());
 

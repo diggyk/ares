@@ -155,8 +155,6 @@ pub fn path_to_moves(start: CoordsAndDir, path: &Vec<&FromStep>) -> Result<Vec<M
         current_orientation = step.dir;
     }
 
-    println!("Path_to_moves: {:#?}", moves);
-
     Ok(moves)
 }
 
@@ -196,12 +194,12 @@ pub fn find_path(robot: &mut Robot, target_coords: Coords) -> Result<Vec<MoveSte
         }, &path
     );
 
-    println!("{:?} to {:?}", starting_coords.clone(), target_coords.clone());
+    println!("PATH FROM: {:?} to {:?}", starting_coords.clone(), target_coords.clone());
     for step in &path {
         print!("({},{}) @ {:?} -> ", step.coords.q, step.coords.r, step.dir);
     }
-    println!("{}", path.len());
-    println!("{:?}", steps);
+    println!("PATH LENGTH: {}", path.len());
+    println!("PATH STEPS: {:?}", steps);
     
     steps
 }

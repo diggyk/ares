@@ -48,6 +48,9 @@ impl Neutral {
     }
 
     fn goto_random_unexplored_cell(robot: &Robot) -> ProcessResult {
+        // the following is useful for debugging
+        // return ProcessResult::TransitionToMove(Coords{q: -2, r: -2}, Dir::Orient0, false);        
+
         let grid = robot.grid.lock().unwrap();
         let robot_locs = grid.robot_locs.clone();
         drop(grid);
