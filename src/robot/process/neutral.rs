@@ -11,12 +11,12 @@ pub struct Neutral {}
 impl Process for Neutral {
     /// Main run of the Neutral process
     fn run(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
-        println!("Neutral: run");
-        let mut scanned_cells: Vec<Coords> = Vec::new();
+        // println!("Neutral: run");
+        let mut _scanned_cells: Vec<Coords> = Vec::new();
         if let ProcessResult::ScannedCells(cells) = Scan::run(conn, robot, None) {
-            scanned_cells = cells;
+            _scanned_cells = cells;
         }
-        println!("Scanned {} cells", scanned_cells.len());
+        // println!("Scanned {} cells", scanned_cells.len());
 
         // TODO: If Others, switch to Fight or Flight
 
@@ -55,6 +55,8 @@ impl Neutral {
         let robot_locs = grid.robot_locs.clone();
         drop(grid);
 
+        let robot_coords = Coords{q: robot.data.q, r: robot.data.r};
+
         let mut search_order: Vec<Dir> = Dir::get_iter().collect();
         let mut rng = thread_rng();
         search_order.shuffle(&mut rng);
@@ -66,6 +68,9 @@ impl Neutral {
         }
 
         known_coords.shuffle(&mut rng);
+        let mut random_pick: Option<(&Coords, &Dir)> = None;
+        let mut closest: Option<(&Coords, &Dir, i32)> = None;
+        let mut farthest: Option<(&Coords, &Dir, i32)> = None;
         for cell_coords in &known_coords {
             let grid = robot.grid.lock().unwrap();
             let cell = grid.cells.get(&cell_coords);
@@ -78,12 +83,35 @@ impl Neutral {
                 if cell.unwrap().get_side(*orientation) != EdgeType::Wall {
                     let test_coords = cell_coords.to(orientation, 1);
                     if !known_coords.contains(&test_coords)
-                        && robot_locs.contains_key(&test_coords)
                     {
-                        return ProcessResult::TransitionToMove(cell_coords.clone(), *orientation, false);
+                        if random_pick.is_none() {
+                            random_pick = Some((cell_coords, orientation));
+                        }
+
+                        let distance = cell_coords.distance_to(&robot_coords);
+                        if closest.is_none() {
+                            closest = Some((cell_coords, orientation, distance));
+                        } else {
+                            if distance < closest.unwrap().2 {
+                                closest = Some((cell_coords, orientation, distance));
+                            }
+                        }
+
+                        if farthest.is_none() {
+                            farthest = Some((cell_coords, orientation, distance));
+                        } else {
+                            if distance > farthest.unwrap().2 {
+                                farthest = Some((cell_coords, orientation, distance));
+                            }
+                        }
                     }
                 }
             }
+        }
+
+        // TODO: we should do this based on preferences but for now, we pick the closest
+        if closest.is_some() {
+            return ProcessResult::TransitionToMove(*closest.unwrap().0, *closest.unwrap().1, false)
         }
 
         // since we didn't find anything unknown, pick a random place

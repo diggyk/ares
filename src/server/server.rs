@@ -76,7 +76,6 @@ impl Server {
                     std::thread::sleep(sleep_time);
                     last_tick = SystemTime::now();
                 } else {
-                    println!("{:?}", elapse);
                     last_tick = SystemTime::now();
                 }
                 std::thread::sleep(Duration::from_secs(1));

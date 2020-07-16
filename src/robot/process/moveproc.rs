@@ -17,7 +17,7 @@ impl Process for Move {
         if let ProcessResult::ScannedCells(cells) = Scan::run(conn, robot, None) {
             scanned_cells = cells;
         }
-        println!("Scanned {} cells", scanned_cells.len());
+        // println!("Scanned {} cells", scanned_cells.len());
 
         if robot.movement_queue.is_none() {
             robot.movement_queue = None;
@@ -49,7 +49,7 @@ impl Process for Move {
                 target_coords = tc;
                 orientation = o;
                 spin = s;
-                println!("Transition to {:?}, {:?}, {:?}", &target_coords, &orientation, spin);
+                println!("Move to {:?}, {:?}, {:?}", &target_coords, &orientation, spin);
             },
             _ => {
                 return ProcessResult::Fail

@@ -194,12 +194,12 @@ pub fn find_path(robot: &mut Robot, target_coords: Coords) -> Result<Vec<MoveSte
         }, &path
     );
 
-    println!("PATH FROM: {:?} to {:?}", starting_coords.clone(), target_coords.clone());
-    for step in &path {
-        print!("({},{}) @ {:?} -> ", step.coords.q, step.coords.r, step.dir);
-    }
-    println!("PATH LENGTH: {}", path.len());
-    println!("PATH STEPS: {:?}", steps);
+    // println!("PATH FROM: {:?} to {:?}", starting_coords.clone(), target_coords.clone());
+    // for step in &path {
+    //     print!("({},{}) @ {:?} -> ", step.coords.q, step.coords.r, step.dir);
+    // }
+    // println!("PATH LENGTH: {}", path.len());
+    // println!("PATH STEPS: {:?}", steps);
     
     steps
 }

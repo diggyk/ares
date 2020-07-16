@@ -197,7 +197,7 @@ impl Dir {
 }
 
 
-#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct Coords {
     pub q: i32,
     pub r: i32,

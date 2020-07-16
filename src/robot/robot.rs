@@ -145,7 +145,7 @@ impl Robot {
 
     /// print id and status text
     pub fn ident(&self) {
-        println!("Robot {}: ({},{}) @ {:?}", self.data.id, self.data.q, self.data.r, self.data.orientation);
+        // println!("Robot {}: ({},{}) @ {:?}", self.data.id, self.data.q, self.data.r, self.data.orientation);
     }
 
     /// Update the orientation on turn left
@@ -222,7 +222,7 @@ impl Robot {
         }
 
         self.known_cells = new_known_cells;
-        println!("Known cells: {}", self.known_cells.len());
+        // println!("Known cells: {}", self.known_cells.len());
     }
 
     /// Try to move a robot
@@ -235,7 +235,7 @@ impl Robot {
         let orientation = self.data.orientation;
         let next_step = self.get_move();
 
-        println!("Move: => {:?}", next_step);
+        // println!("Move: => {:?}", next_step);
 
         if next_step.is_none() {
             return ProcessResult::Fail;
