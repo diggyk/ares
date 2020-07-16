@@ -1,3 +1,6 @@
+pub mod traversal;
+pub use traversal::*;
+
 use rand::Rng;
 use rand::seq::SliceRandom;
 use std::collections::HashMap;

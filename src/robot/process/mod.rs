@@ -5,8 +5,8 @@ mod neutral;
 mod scan;
 
 pub use moveproc::*;
-pub use neutral::Neutral;
-pub use scan::Scan;
+pub use neutral::*;
+pub use scan::*;
 
 use crate::grid::*;
 use super::Robot;
