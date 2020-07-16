@@ -33,10 +33,15 @@ pub fn generate_cells(size: i32) -> HashMap<Coords, GridCell> {
         }
     }
 
-    add_rooms(&mut cells, size);
-    for _ in 0..size * 2 {
-        make_path(&mut cells);
+    if size > 3 {
+        add_rooms(&mut cells, size);
+        for _ in 0..size * 2 {
+            make_path(&mut cells);
+        }
+    } else {
+        make_room(&mut cells, &root_coords, size);
     }
+    
     enforce_outer_walls(&mut cells, size);
 
     cells
@@ -158,7 +163,6 @@ fn create_edge_between_cells(cells: &mut HashMap<Coords, GridCell>, coords: &Coo
 }
 
 fn enforce_perimeter_wall(cells: &mut HashMap<Coords, GridCell>, coords: &Coords, dir: &Dir, last: bool){
-    let cell = cells.get_mut(&coords).unwrap();
     match dir {
         Dir::Orient0 => {
             if last { create_edge_between_cells(cells, coords, &Dir::Orient0, EdgeType::Wall) }

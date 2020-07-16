@@ -1,11 +1,12 @@
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
-// use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
 use std::time::SystemTime;
 
 use crate::grid::*;
 use crate::robot::*;
 use crate::schema::*;
+use crate::grid::utils::traversal::is_reachable;
 use super::*;
 
 pub struct Scan {}
@@ -16,22 +17,30 @@ impl Process for Scan {
         let grid = robot.grid.lock().unwrap();
 
         // For now, let's scan in a 120 for distance of 2
-        let cells = grid.get_cells(our_coords, robot.data.orientation, 120, 1);
+        let cells = grid.get_cells(&our_coords, robot.data.orientation, 120, 1);
+        let cells_full: HashMap<Coords, &GridCell> = cells.iter().map(
+            |cell| (Coords{ q: cell.q, r: cell.r }, *cell)
+        ).collect();
 
         let mut known_cells: Vec<RobotKnownCell> = Vec::new();
         let mut scanned_cells: Vec<Coords> = Vec::new();
         for cell in cells {
             // TODO: see if this cell is visible from this starting location
-            known_cells.push(
-                RobotKnownCell {
-                    robot_id: robot.data.id,
-                    gridcell_id: cell.id,
-                    discovery_time: SystemTime::now(),
-                    q: cell.q,
-                    r: cell.r,
-                }
-            );
-            scanned_cells.push(Coords{q: cell.q, r: cell.r});
+            let cell_coords = Coords{q: cell.q, r: cell.r};
+            let distance = our_coords.distance_to(&cell_coords);
+            let reachable = is_reachable(&our_coords, &cell_coords, &cells_full, distance);
+            if reachable {
+                known_cells.push(
+                    RobotKnownCell {
+                        robot_id: robot.data.id,
+                        gridcell_id: cell.id,
+                        discovery_time: SystemTime::now(),
+                        q: cell.q,
+                        r: cell.r,
+                    }
+                );
+                scanned_cells.push(Coords{q: cell.q, r: cell.r});
+            }
         }
 
         let query = diesel::insert_into(robot_known_cells::table).values(&known_cells)

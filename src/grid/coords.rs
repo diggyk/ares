@@ -257,6 +257,20 @@ impl Coords {
 
         Coords{q, r}
     }
+
+    /// Get the distance between these coords and a target
+    pub fn distance_to(&self, target: &Coords) -> i32 {
+        let a = self.to_cube();
+        let b = target.to_cube();
+
+        if let CoordsKind::Cube{x: ax, y: ay, z: az} = a {
+            if let CoordsKind::Cube{x: bx, y: by, z: bz} = b {
+                return ((ax - bx).abs() + (ay - by).abs() + (az - bz).abs()) / 2;
+            }
+        }
+
+        -1
+    }
 }
 
 #[cfg(test)]
@@ -284,6 +298,13 @@ fn convert_to_cube() {
         assert_eq!(y, 1);
         assert_eq!(z, -2);
     }
+}
+
+#[test]
+fn test_distance() {
+    let coords = Coords { q: 0, r: 0};
+    assert_eq!(coords.distance_to(&Coords{ q: 0, r: 4}), 4);
+    assert_eq!(coords.distance_to(&Coords{ q: -2, r: 3}), 3);
 }
 
 #[test]

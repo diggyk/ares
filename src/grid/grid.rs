@@ -192,7 +192,7 @@ impl Grid {
     }
 
     /// Given a starting point, direction, field of view and distance, get the cells in this range
-    pub fn get_cells(&self, start_coords: Coords, dir: Dir, fov: i32, distance: i32) -> Vec<&GridCell> {
+    pub fn get_cells(&self, start_coords: &Coords, dir: Dir, fov: i32, distance: i32) -> Vec<&GridCell> {
         let mut found_cells = Vec::new();
 
         // add our current cell
@@ -252,9 +252,9 @@ fn test_cell_creation() {
     let grid = Grid::new(4, None).unwrap();
 
     assert_eq!(61, grid.cells.len());
-    assert_eq!(3, grid.get_cells(Coords{q:0,r:0}, Dir::Orient0, 0, 2).len());
-    assert_eq!(6, grid.get_cells(Coords{q:0,r:0}, Dir::Orient0, 240, 1).len());
-    assert_eq!(9, grid.get_cells(Coords{q:0,r:0}, Dir::Orient0, 120, 2).len());
-    assert_eq!(15, grid.get_cells(Coords{q:0,r:0}, Dir::Orient0, 240, 2).len());
-    assert_eq!(19, grid.get_cells(Coords{q:0,r:0}, Dir::Orient0, 360, 2).len());
+    assert_eq!(3, grid.get_cells(&Coords{q:0,r:0}, Dir::Orient0, 0, 2).len());
+    assert_eq!(6, grid.get_cells(&Coords{q:0,r:0}, Dir::Orient0, 240, 1).len());
+    assert_eq!(9, grid.get_cells(&Coords{q:0,r:0}, Dir::Orient0, 120, 2).len());
+    assert_eq!(15, grid.get_cells(&Coords{q:0,r:0}, Dir::Orient0, 240, 2).len());
+    assert_eq!(19, grid.get_cells(&Coords{q:0,r:0}, Dir::Orient0, 360, 2).len());
 }

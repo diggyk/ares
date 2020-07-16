@@ -49,7 +49,7 @@ impl Server {
         self.robots.insert(robot.data.id, robot);
     }
 
-    fn wait_for_enter(&self) -> std::io::Result<()> {
+    fn _wait_for_enter(&self) -> std::io::Result<()> {
         println!("Paused (press enter)...");
         let mut buffer = String::new();
         std::io::stdin().read_to_string(&mut buffer)?;

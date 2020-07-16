@@ -27,7 +27,7 @@ impl Process for Move {
         }
     }
 
-    fn init(conn: &PgConnection, robot: &mut Robot, message: Option<ProcessResult>) -> ProcessResult {
+    fn init(_: &PgConnection, robot: &mut Robot, message: Option<ProcessResult>) -> ProcessResult {
 
         robot.movement_queue = None;
 
