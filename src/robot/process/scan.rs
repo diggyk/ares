@@ -29,7 +29,7 @@ impl Process for Scan {
             let cell_coords = Coords{q: cell.q, r: cell.r};
             let distance = our_coords.distance_to(&cell_coords);
             let reachable = is_reachable(&our_coords, &cell_coords, &cells_full, distance);
-            if reachable {
+            if distance == 0 || reachable {
                 known_cells.push(
                     RobotKnownCell {
                         robot_id: robot.data.id,

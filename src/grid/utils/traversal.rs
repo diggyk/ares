@@ -176,7 +176,7 @@ pub fn find_path(robot: &mut Robot, target_coords: Coords) -> Result<Vec<MoveSte
     }
 
     let starting_coords = Coords{q: robot.data.q, r: robot.data.r};
-    
+
     // Get a flood map so we know how we would get to each cell
     let came_from: HashMap<Coords, FromStep> = flood_map(
         &starting_coords, &robot.data.orientation, &target_coords, &known_cells_full
