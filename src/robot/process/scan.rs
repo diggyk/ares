@@ -43,17 +43,8 @@ impl Process for Scan {
             }
         }
 
-        let query = diesel::insert_into(robot_known_cells::table).values(&known_cells)
-            .on_conflict((robot_known_cells::robot_id, robot_known_cells::gridcell_id))
-            .do_update().set(robot_known_cells::discovery_time.eq(SystemTime::now()))
-            .execute(conn);
-
-        if let Err(reason) = query {
-            println!("Could not update known cells: {:?}", reason);
-        }
-
         drop(grid);
-        robot.update_known_cells(known_cells);
+        robot.update_known_cells(conn, known_cells);
 
         ProcessResult::ScannedCells(scanned_cells)
     }

@@ -1,7 +1,8 @@
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use std::time::SystemTime;
 
 use crate::utils;
 use crate::grid::*;
@@ -34,8 +35,9 @@ pub struct RobotData {
 }
 
 /// Represents a grid cell that is known by a robot
-#[derive(Clone, Debug, Queryable, Insertable)]
+#[derive(Clone, Debug, Queryable, Identifiable, Insertable)]
 #[table_name="robot_known_cells"]
+#[primary_key(robot_id, gridcell_id)]
 pub struct RobotKnownCell {
     pub robot_id: i64,
     pub gridcell_id: i32,
@@ -66,6 +68,20 @@ impl PartialEq for RobotKnownCell {
             && self.q == other.q && self.r == other.q;
 
         does_match
+    }
+}
+
+impl Eq for RobotKnownCell {}
+
+impl Ord for RobotKnownCell {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.discovery_time.cmp(&other.discovery_time)
+    }
+}
+
+impl PartialOrd for RobotKnownCell {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
 
@@ -202,8 +218,8 @@ impl Robot {
         self.movement_queue = None;
     }
 
-    /// Update known cells with new scans
-    pub fn update_known_cells(&mut self, new_cells: Vec<RobotKnownCell>) {
+    /// Update known cells with new scans; remove old results to match limits
+    pub fn update_known_cells(&mut self, conn: &PgConnection, new_cells: Vec<RobotKnownCell>) {
         let mut new_known_cells: Vec<RobotKnownCell> = Vec::new();
         for cell in &self.known_cells {
             let mut found = false;
@@ -222,7 +238,47 @@ impl Robot {
         }
 
         self.known_cells = new_known_cells;
-        // println!("Known cells: {}", self.known_cells.len());
+        let removed_cells = Robot::limit_known_cells(&mut self.known_cells);
+
+        let query = diesel::insert_into(robot_known_cells::table).values(&self.known_cells)
+            .on_conflict((robot_known_cells::robot_id, robot_known_cells::gridcell_id))
+            .do_update().set(robot_known_cells::discovery_time.eq(SystemTime::now()))
+            .execute(conn);
+
+        if let Err(reason) = query {
+            println!("Could not update known cells: {:?}", reason);
+        }
+
+        for removed_cell in removed_cells {
+            let query = diesel::delete(
+                robot_known_cells::table.filter(
+                    robot_known_cells::robot_id.eq(removed_cell.robot_id)
+                ).filter(
+                    robot_known_cells::gridcell_id.eq(removed_cell.gridcell_id)
+                )
+            ).execute(conn);
+            if let Err(reason) = query {
+                println!("Could not update known cells: {:?}", reason);
+            }
+        }
+        
+        println!("Known cells: {}", self.known_cells.len());
+    }
+
+    pub fn limit_known_cells(known_cells: &mut Vec<RobotKnownCell>) -> Vec<RobotKnownCell> {
+        known_cells.sort();
+        known_cells.reverse();
+        
+        let mut removed_cells = Vec::new();
+        // TODO: the max "memory" should be a property of the memory module
+        while known_cells.len() > 19 {
+            let cell = known_cells.pop();
+            if cell.is_some() {
+                removed_cells.push(cell.unwrap());
+            }
+        }
+
+        removed_cells
     }
 
     /// Try to move a robot
