@@ -51,10 +51,6 @@ impl Neutral {
         // the following is useful for debugging
         // return ProcessResult::TransitionToMove(Coords{q: -2, r: -2}, Dir::Orient0, false);        
 
-        let grid = robot.grid.lock().unwrap();
-        let robot_locs = grid.robot_locs.clone();
-        drop(grid);
-
         let robot_coords = Coords{q: robot.data.q, r: robot.data.r};
 
         let mut search_order: Vec<Dir> = Dir::get_iter().collect();

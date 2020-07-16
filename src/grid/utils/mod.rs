@@ -34,7 +34,7 @@ pub fn generate_cells(size: i32) -> HashMap<Coords, GridCell> {
     }
 
     if size > 3 {
-        add_rooms(&mut cells, size);
+        add_rooms(&mut cells, size/2);
         for _ in 0..size * 2 {
             make_path(&mut cells);
         }
@@ -55,7 +55,7 @@ fn add_rooms(cells: &mut HashMap<Coords, GridCell>, size: i32) {
     let num_rooms = size/2;
 
     for _ in 0..num_rooms {
-        let size = rng.gen_range(1, max_size);
+        let size = if size > 2 {rng.gen_range(1, max_size)} else { size };
         let root_coords = coords.choose(&mut rng).unwrap();
         make_room(cells, &root_coords, size);
     }
@@ -63,9 +63,7 @@ fn add_rooms(cells: &mut HashMap<Coords, GridCell>, size: i32) {
 
 /// Make a room
 fn make_room(cells: &mut HashMap<Coords, GridCell>, root_coords: &Coords, size: i32) {
-    let mut root_cell = cells.get_mut(root_coords).unwrap();
-
-    open_cell(&mut root_cell);
+    open_cell(cells, root_coords);
 
     // CREATE CELLS
     // for each radius
@@ -82,12 +80,7 @@ fn make_room(cells: &mut HashMap<Coords, GridCell>, root_coords: &Coords, size: 
                     continue;
                 }
 
-                let mut cell = cells.get_mut(&coords).unwrap();
-                if cell.is_open() {
-                    continue;
-                }
-
-                open_cell(&mut cell);
+                open_cell(cells, &coords);
                 if radius == size as i32 {
                     enforce_perimeter_wall(cells, &coords, &dir, step == radius - 1);
                 }
@@ -198,11 +191,11 @@ fn enforce_perimeter_wall(cells: &mut HashMap<Coords, GridCell>, coords: &Coords
 }
 
 /// Open up all the cell walls
-fn open_cell(cell: &mut GridCell) {
-    cell.edge0 = EdgeType::Open;
-    cell.edge60 = EdgeType::Open;
-    cell.edge120 = EdgeType::Open;
-    cell.edge180 = EdgeType::Open;
-    cell.edge240 = EdgeType::Open;
-    cell.edge300 = EdgeType::Open;
+fn open_cell(cells: &mut HashMap<Coords, GridCell>, coords: &Coords) {
+    create_edge_between_cells(cells, coords, &Dir::Orient0, EdgeType::Open);
+    create_edge_between_cells(cells, coords, &Dir::Orient60, EdgeType::Open);
+    create_edge_between_cells(cells, coords, &Dir::Orient120, EdgeType::Open);
+    create_edge_between_cells(cells, coords, &Dir::Orient180, EdgeType::Open);
+    create_edge_between_cells(cells, coords, &Dir::Orient240, EdgeType::Open);
+    create_edge_between_cells(cells, coords, &Dir::Orient300, EdgeType::Open);
 }
