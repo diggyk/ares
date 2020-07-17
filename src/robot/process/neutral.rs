@@ -115,7 +115,11 @@ impl Neutral {
 
         // TODO: we should do this based on preferences but for now, we pick the closest
         if closest.is_some() {
-            return ProcessResult::TransitionToMove(*closest.unwrap().0, *closest.unwrap().1, false);
+            return ProcessResult::TransitionToMove(
+                *closest.unwrap().0,
+                *closest.unwrap().1,
+                false,
+            );
         }
 
         // since we didn't find anything unknown, pick a random place

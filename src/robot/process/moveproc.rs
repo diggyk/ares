@@ -1,8 +1,8 @@
 use diesel::PgConnection;
 
-use crate::grid::utils::traversal;
-use super::*;
 use super::ProcessResult;
+use super::*;
+use crate::grid::utils::traversal;
 
 pub struct Move {}
 
@@ -28,10 +28,12 @@ impl Process for Move {
     }
 
     fn init(_: &PgConnection, robot: &mut Robot, message: Option<ProcessResult>) -> ProcessResult {
-
         robot.movement_queue = None;
 
-        let robot_coords = Coords{ q: robot.data.q, r: robot.data.r };
+        let robot_coords = Coords {
+            q: robot.data.q,
+            r: robot.data.r,
+        };
 
         let target_coords: Coords;
         let orientation: Dir;
@@ -49,11 +51,12 @@ impl Process for Move {
                 target_coords = tc;
                 orientation = o;
                 spin = s;
-                println!("Move to {:?}, {:?}, {:?}", &target_coords, &orientation, spin);
-            },
-            _ => {
-                return ProcessResult::Fail
-            },
+                println!(
+                    "Move to {:?}, {:?}, {:?}",
+                    &target_coords, &orientation, spin
+                );
+            }
+            _ => return ProcessResult::Fail,
         }
 
         if target_coords == robot_coords {

@@ -8,9 +8,8 @@ pub use moveproc::*;
 pub use neutral::*;
 pub use scan::*;
 
-use crate::grid::*;
 use super::Robot;
-
+use crate::grid::*;
 
 /// Message returned from a process run to let robot know what to do next
 #[derive(Debug, PartialEq)]
@@ -37,6 +36,11 @@ pub enum Processes {
 
 /// Trait to define a process
 pub trait Process {
-    fn run(conn: &PgConnection, robot: &mut Robot, message: Option<ProcessResult>) -> ProcessResult;
-    fn init(conn: &PgConnection, robot: &mut Robot, message: Option<ProcessResult>) -> ProcessResult;
+    fn run(conn: &PgConnection, robot: &mut Robot, message: Option<ProcessResult>)
+        -> ProcessResult;
+    fn init(
+        conn: &PgConnection,
+        robot: &mut Robot,
+        message: Option<ProcessResult>,
+    ) -> ProcessResult;
 }
