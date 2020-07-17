@@ -23,6 +23,20 @@ table! {
 }
 
 table! {
+    robot_modules (robot_id) {
+        robot_id -> Int8,
+        m_collector -> Nullable<Varchar>,
+        m_drivesystem -> Nullable<Varchar>,
+        m_exfilbeacon -> Nullable<Varchar>,
+        m_hullbeacon -> Nullable<Varchar>,
+        m_memory -> Nullable<Varchar>,
+        m_power -> Nullable<Varchar>,
+        m_scanner -> Nullable<Varchar>,
+        m_weapons -> Nullable<Varchar>,
+    }
+}
+
+table! {
     robots (id) {
         id -> Int8,
         name -> Varchar,
@@ -31,9 +45,7 @@ table! {
         q -> Int4,
         r -> Int4,
         orientation -> Int2,
-        gridcell -> Nullable<Int4>,
-        components -> Nullable<Json>,
-        configs -> Nullable<Json>,
+        power -> Int4,
     }
 }
 
@@ -51,10 +63,12 @@ table! {
 
 joinable!(robot_known_cells -> gridcells (gridcell_id));
 joinable!(robot_known_cells -> robots (robot_id));
+joinable!(robot_modules -> robots (robot_id));
 
 allow_tables_to_appear_in_same_query!(
     gridcells,
     robot_known_cells,
+    robot_modules,
     robots,
     valuables,
 );

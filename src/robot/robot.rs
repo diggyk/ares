@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 
+use super::modules::*;
 use super::process::*;
 use crate::grid::*;
 use crate::schema::*;
@@ -32,6 +33,7 @@ pub struct RobotData {
     pub gridcell: Option<i32>,
     pub components: Option<serde_json::Value>,
     pub configs: Option<serde_json::Value>,
+    pub power: i32,
 }
 
 /// Represents a grid cell that is known by a robot
@@ -86,7 +88,6 @@ impl PartialOrd for RobotKnownCell {
     }
 }
 
-#[derive(Debug)]
 pub struct Robot {
     pub grid: Arc<Mutex<Grid>>,
     pub data: RobotData,
@@ -95,6 +96,9 @@ pub struct Robot {
 
     pub active_process: Option<Processes>,
     pub movement_queue: Option<Vec<MoveStep>>,
+
+    pub m_power: Option<Box<dyn PowerModule>>,
+    pub m_scanner: Option<Box<dyn ScannerModule>>,
 }
 
 impl Robot {
@@ -114,6 +118,8 @@ impl Robot {
                 visible_others: Vec::new(),
                 active_process: None,
                 movement_queue: None,
+                m_power: None,
+                m_scanner: None,
             };
 
             if let Ok(known_cells) = robot_known_cells::table
@@ -160,6 +166,7 @@ impl Robot {
                 gridcell: None,
                 components: None,
                 configs: None,
+                power: 0,
             }
         }
 
@@ -170,6 +177,8 @@ impl Robot {
             visible_others: Vec::new(),
             active_process: None,
             movement_queue: None,
+            m_power: None,
+            m_scanner: None,
         }
     }
 
