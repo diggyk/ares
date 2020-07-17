@@ -1,10 +1,10 @@
 use diesel::PgConnection;
-use rand::thread_rng;
 use rand::seq::SliceRandom;
+use rand::thread_rng;
 
-use crate::grid::utils::traversal;
-use super::*;
 use super::ProcessResult;
+use super::*;
+use crate::grid::utils::traversal;
 
 pub struct Neutral {}
 
@@ -26,7 +26,7 @@ impl Process for Neutral {
         // TODO: If spotted, Valuables, switch to Move
 
         // TODO: Time to exfiltrate?
-        
+
         // TODO: Switch to hibernate?
 
         // With nothing else to do, see what the default move is for neutral
@@ -50,9 +50,12 @@ impl Neutral {
 
     fn goto_random_unexplored_cell(robot: &Robot) -> ProcessResult {
         // the following is useful for debugging
-        // return ProcessResult::TransitionToMove(Coords{q: -2, r: -2}, Dir::Orient0, false);        
+        // return ProcessResult::TransitionToMove(Coords{q: -2, r: -2}, Dir::Orient0, false);
 
-        let robot_coords = Coords{q: robot.data.q, r: robot.data.r};
+        let robot_coords = Coords {
+            q: robot.data.q,
+            r: robot.data.r,
+        };
 
         let mut search_order: Vec<Dir> = Dir::get_vec();
         let mut rng = thread_rng();
@@ -82,7 +85,8 @@ impl Neutral {
             for orientation in &search_order {
                 if cell.unwrap().get_side(*orientation) != EdgeType::Wall {
                     let test_coords = cell_coords.to(orientation, 1);
-                    if !known_coords.contains(&test_coords) && !robot.known_occupied_coords(&test_coords)
+                    if !known_coords.contains(&test_coords)
+                        && !robot.known_occupied_coords(&test_coords)
                     {
                         if random_pick.is_none() {
                             random_pick = Some((cell_coords, orientation));
@@ -111,10 +115,14 @@ impl Neutral {
 
         // TODO: we should do this based on preferences but for now, we pick the closest
         if closest.is_some() {
-            return ProcessResult::TransitionToMove(*closest.unwrap().0, *closest.unwrap().1, false)
+            return ProcessResult::TransitionToMove(*closest.unwrap().0, *closest.unwrap().1, false);
         }
 
         // since we didn't find anything unknown, pick a random place
-        return ProcessResult::TransitionToMove(known_coords.first().unwrap().clone(), *search_order.first().unwrap(), false);
+        return ProcessResult::TransitionToMove(
+            known_coords.first().unwrap().clone(),
+            *search_order.first().unwrap(),
+            false,
+        );
     }
 }

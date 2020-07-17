@@ -7,7 +7,7 @@ use crate::robot::*;
 pub enum MoveStep {
     Forward,
     Left,
-    Right
+    Right,
 }
 
 #[derive(Debug)]
@@ -18,22 +18,27 @@ pub struct FromStep {
 
 /// Get a depth and directional map from starting to end coords
 pub fn flood_map(
-    starting_coords: &Coords, 
-    starting_orientation: &Dir, 
-    target_coords: &Coords, 
-    known_cells_full: &HashMap<Coords, GridCell>
+    starting_coords: &Coords,
+    starting_orientation: &Dir,
+    target_coords: &Coords,
+    known_cells_full: &HashMap<Coords, GridCell>,
 ) -> HashMap<Coords, FromStep> {
-
     // frontier holds the cells we've discovered that need to be explored
     let mut frontier: Vec<CoordsAndDir> = Vec::new();
-    frontier.push(CoordsAndDir{
-        coords: starting_coords.clone(), 
+    frontier.push(CoordsAndDir {
+        coords: starting_coords.clone(),
         dir: starting_orientation.clone(),
     });
 
     // came_from tracks how we got to each cell; start with our starting coords
     let mut came_from: HashMap<Coords, FromStep> = HashMap::new();
-    came_from.insert(starting_coords.clone(), FromStep{coords: starting_coords.clone(), dir: Dir::Orient0});
+    came_from.insert(
+        starting_coords.clone(),
+        FromStep {
+            coords: starting_coords.clone(),
+            dir: Dir::Orient0,
+        },
+    );
 
     while frontier.len() != 0 {
         // take an undiscovered cell from the frontier
@@ -43,7 +48,7 @@ pub fn flood_map(
         if &current.coords == target_coords {
             break;
         }
-        
+
         // load the full cell information
         let cell = known_cells_full.get(&current.coords).unwrap();
 
@@ -65,7 +70,7 @@ pub fn flood_map(
                 // also add it to the tracking of how we get to this
                 // adjacent cell
                 if let Some(_) = known_cells_full.get(&new_coords) {
-                    frontier.push(CoordsAndDir{
+                    frontier.push(CoordsAndDir {
                         coords: new_coords.clone(),
                         dir: orientation,
                     });
@@ -92,7 +97,7 @@ pub fn find_spin(start_orientation: Dir, end_orientation: Dir) -> Vec<MoveStep> 
     a2 -= a1;
     if a2 > 180 {
         a2 -= 360;
-    } else if a2 < -180{
+    } else if a2 < -180 {
         a2 += 360;
     }
 
@@ -121,17 +126,21 @@ pub fn depth_to_path(
     let mut current = match came_from.get(&target_coords) {
         Some(op_fromstep) => op_fromstep,
         None => {
-            return Err(String::from("Error: couldn't find the target coords in the depth map"));
-        },
+            return Err(String::from(
+                "Error: couldn't find the target coords in the depth map",
+            ));
+        }
     };
 
-    while current.coords != starting_coords  {
+    while current.coords != starting_coords {
         path.push(current);
         current = match came_from.get(&current.coords) {
             Some(op_fromstep) => op_fromstep,
             None => {
-                return Err(String::from("Error: couldn't get a step when traversing depth map"));
-            },
+                return Err(String::from(
+                    "Error: couldn't get a step when traversing depth map",
+                ));
+            }
         };
     }
 
@@ -161,13 +170,19 @@ pub fn path_to_moves(start: CoordsAndDir, path: &Vec<&FromStep>) -> Result<Vec<M
 // Given a target coordinate, find a path there using only known cells by this robot
 pub fn find_path(robot: &mut Robot, target_coords: Coords) -> Result<Vec<MoveStep>, String> {
     let known_cells_full = robot.get_known_traversable_cells();
-    let starting_coords = Coords{q: robot.data.q, r: robot.data.r};
+    let starting_coords = Coords {
+        q: robot.data.q,
+        r: robot.data.r,
+    };
 
     // Get a flood map so we know how we would get to each cell
     let came_from: HashMap<Coords, FromStep> = flood_map(
-        &starting_coords, &robot.data.orientation, &target_coords, &known_cells_full
+        &starting_coords,
+        &robot.data.orientation,
+        &target_coords,
+        &known_cells_full,
     );
-    
+
     // Get the path in FromStep vector
     let path = depth_to_path(&came_from, target_coords.clone(), starting_coords.clone());
     if path.is_err() {
@@ -177,9 +192,13 @@ pub fn find_path(robot: &mut Robot, target_coords: Coords) -> Result<Vec<MoveSte
 
     let steps = path_to_moves(
         CoordsAndDir {
-            coords: Coords { q: robot.data.q, r: robot.data.r },
+            coords: Coords {
+                q: robot.data.q,
+                r: robot.data.r,
+            },
             dir: robot.data.orientation,
-        }, &path
+        },
+        &path,
     );
 
     // println!("PATH FROM: {:?} to {:?}", starting_coords.clone(), target_coords.clone());
@@ -188,27 +207,30 @@ pub fn find_path(robot: &mut Robot, target_coords: Coords) -> Result<Vec<MoveSte
     // }
     // println!("PATH LENGTH: {}", path.len());
     // println!("PATH STEPS: {:?}", steps);
-    
+
     steps
 }
 
 /// Test if a coordinate is reachable from a starting point within a specified number of steps
 pub fn is_reachable(
-    starting_coords: &Coords, 
-    target_coords: &Coords, 
+    starting_coords: &Coords,
+    target_coords: &Coords,
     known_cells_full: &HashMap<Coords, GridCell>,
     steps: i32,
 ) -> bool {
     // Get a flood map so we know how we would get to each cell
     // Note the starting direction here won't matter since we never convert this to steps
     let came_from: HashMap<Coords, FromStep> = flood_map(
-        &starting_coords, &Dir::Orient0, &target_coords, known_cells_full
+        &starting_coords,
+        &Dir::Orient0,
+        &target_coords,
+        known_cells_full,
     );
-    
+
     // Get the path in FromStep vector
     let path = depth_to_path(&came_from, target_coords.clone(), starting_coords.clone());
     if path.is_err() {
-        return false
+        return false;
     }
 
     path.unwrap().len() <= steps as usize
@@ -217,10 +239,7 @@ pub fn is_reachable(
 #[cfg(test)]
 #[test]
 fn test_spins() {
-    assert_eq!(
-        find_spin(Dir::Orient0, Dir::Orient300),
-        [MoveStep::Left]
-    );
+    assert_eq!(find_spin(Dir::Orient0, Dir::Orient300), [MoveStep::Left]);
 
     assert_eq!(
         find_spin(Dir::Orient120, Dir::Orient0),

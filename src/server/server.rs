@@ -3,11 +3,11 @@ use std::io::Read;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime};
 
+use super::ServerConfig;
 use crate::grid::Coords;
 use crate::grid::Dir;
 use crate::grid::Grid;
 use crate::robot::Robot;
-use super::ServerConfig;
 
 /// ARES Server internal state
 pub struct Server {
@@ -23,20 +23,36 @@ pub struct Server {
 impl Server {
     /// Create a new server; load all data from the DB
     pub fn new(config: ServerConfig) -> Server {
-        let grid = Arc::new(Mutex::new(Grid::load(&config.conn).expect("Failed to load grid")));
-        println!("Loaded grid with {} cells", grid.lock().unwrap().cells.len());
+        let grid = Arc::new(Mutex::new(
+            Grid::load(&config.conn).expect("Failed to load grid"),
+        ));
+        println!(
+            "Loaded grid with {} cells",
+            grid.lock().unwrap().cells.len()
+        );
 
         let robots: HashMap<i64, Robot> = Robot::load_all(&config.conn, grid.clone());
         println!("Loaded {} active robots", robots.len());
 
         let mut robot_locs: HashMap<Coords, i64> = HashMap::new();
         for (id, robot) in &robots {
-            robot_locs.insert(Coords{ q: robot.data.q, r: robot.data.r }, *id);
+            robot_locs.insert(
+                Coords {
+                    q: robot.data.q,
+                    r: robot.data.r,
+                },
+                *id,
+            );
         }
 
         grid.lock().unwrap().robot_locs = robot_locs;
 
-        Server { config, grid, robots, shutdown: false }
+        Server {
+            config,
+            grid,
+            robots,
+            shutdown: false,
+        }
     }
 
     /// Spawn a new robot by finding an open, unoccupied cell
@@ -44,7 +60,12 @@ impl Server {
         let mut grid = self.grid.lock().expect("Could not get lock on grid");
         let coords = grid.get_random_open_cell();
         let orientation: Dir = rand::random();
-        let robot = Robot::new(coords.clone(), orientation, Some(&self.config.conn), self.grid.clone());
+        let robot = Robot::new(
+            coords.clone(),
+            orientation,
+            Some(&self.config.conn),
+            self.grid.clone(),
+        );
         grid.robot_locs.insert(coords.clone(), robot.data.id);
         self.robots.insert(robot.data.id, robot);
     }

@@ -12,9 +12,9 @@ use rand::{
 // holds the Coordinates as either Axial or Cube coords
 #[derive(Debug)]
 pub enum CoordsKind {
-    Axial {q: i32, r: i32},
-    Cube {x: i32, y: i32, z: i32},
-    Flat2D {x: f64, y: f64},
+    Axial { q: i32, r: i32 },
+    Cube { x: i32, y: i32, z: i32 },
+    Flat2D { x: f64, y: f64 },
 }
 
 #[repr(i16)]
@@ -68,34 +68,34 @@ impl From<i16> for Dir {
             300 => Dir::Orient300,
             _ => Dir::Orient0,
         }
-    } 
- }
- 
- impl From<Dir> for i16 {
-     fn from(item: Dir) -> i16 {
-         match item {
-             Dir::Orient0 => 0,
-             Dir::Orient60 => 60,
-             Dir::Orient120 => 120,
-             Dir::Orient180 => 180,
-             Dir::Orient240 => 240,
-             Dir::Orient300 => 300,
-         }
-     }
- }
+    }
+}
+
+impl From<Dir> for i16 {
+    fn from(item: Dir) -> i16 {
+        match item {
+            Dir::Orient0 => 0,
+            Dir::Orient60 => 60,
+            Dir::Orient120 => 120,
+            Dir::Orient180 => 180,
+            Dir::Orient240 => 240,
+            Dir::Orient300 => 300,
+        }
+    }
+}
 
 impl From<i32> for Dir {
-   fn from(item: i32) -> Dir {
-       match item {
-           0 => Dir::Orient0,
-           60 => Dir::Orient60,
-           120 => Dir::Orient120,
-           180 => Dir::Orient180,
-           240 => Dir::Orient240,
-           300 => Dir::Orient300,
-           _ => Dir::Orient0,
-       }
-   } 
+    fn from(item: i32) -> Dir {
+        match item {
+            0 => Dir::Orient0,
+            60 => Dir::Orient60,
+            120 => Dir::Orient120,
+            180 => Dir::Orient180,
+            240 => Dir::Orient240,
+            300 => Dir::Orient300,
+            _ => Dir::Orient0,
+        }
+    }
 }
 
 impl From<Dir> for i32 {
@@ -149,7 +149,14 @@ impl Dir {
     }
 
     pub fn get_vec() -> Vec<Dir> {
-        vec![Dir::Orient0, Dir::Orient60, Dir::Orient120, Dir::Orient180, Dir::Orient240, Dir::Orient300]
+        vec![
+            Dir::Orient0,
+            Dir::Orient60,
+            Dir::Orient120,
+            Dir::Orient180,
+            Dir::Orient240,
+            Dir::Orient300,
+        ]
     }
 
     // starting with the given orientation, make a vector of each other
@@ -169,7 +176,7 @@ impl Dir {
 
             temp = start + x;
             if temp > 360 {
-                temp -=360;
+                temp -= 360;
             }
             dirs.push(temp.into());
         }
@@ -194,7 +201,6 @@ impl Dir {
     }
 }
 
-
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct Coords {
     pub q: i32,
@@ -215,11 +221,18 @@ fn test_dir_conversions() {
 
 impl Coords {
     pub fn to_axial(&self) -> CoordsKind {
-        CoordsKind::Axial{q: self.q, r: self.r}
+        CoordsKind::Axial {
+            q: self.q,
+            r: self.r,
+        }
     }
 
     pub fn to_cube(&self) -> CoordsKind {
-        CoordsKind::Cube{x: self.q, y: self.r, z: 0 - self.q - self.r}
+        CoordsKind::Cube {
+            x: self.q,
+            y: self.r,
+            z: 0 - self.q - self.r,
+        }
     }
 
     // this conversion is to map the center of the cells onto a standard
@@ -228,10 +241,10 @@ impl Coords {
         let q = self.q as f64;
         let r = self.r as f64;
 
-        let x = (2.0/3f64.sqrt() + 1.0/3f64.sqrt())*q;
+        let x = (2.0 / 3f64.sqrt() + 1.0 / 3f64.sqrt()) * q;
         let y = q + r * 2.0;
 
-        CoordsKind::Flat2D{x, y}
+        CoordsKind::Flat2D { x, y }
     }
 
     pub fn to(&self, dir: &Dir, dist: i32) -> Coords {
@@ -244,7 +257,7 @@ impl Coords {
             Dir::Orient120 => {
                 q += dist;
                 r -= dist;
-            },
+            }
             Dir::Orient180 => r -= dist,
             Dir::Orient240 => q -= dist,
             Dir::Orient300 => {
@@ -253,7 +266,7 @@ impl Coords {
             }
         }
 
-        Coords{q, r}
+        Coords { q, r }
     }
 
     /// Get the distance between these coords and a target
@@ -261,8 +274,18 @@ impl Coords {
         let a = self.to_cube();
         let b = target.to_cube();
 
-        if let CoordsKind::Cube{x: ax, y: ay, z: az} = a {
-            if let CoordsKind::Cube{x: bx, y: by, z: bz} = b {
+        if let CoordsKind::Cube {
+            x: ax,
+            y: ay,
+            z: az,
+        } = a
+        {
+            if let CoordsKind::Cube {
+                x: bx,
+                y: by,
+                z: bz,
+            } = b
+            {
                 return ((ax - bx).abs() + (ay - by).abs() + (az - bz).abs()) / 2;
             }
         }
@@ -274,8 +297,8 @@ impl Coords {
 #[cfg(test)]
 #[test]
 fn convert_to_cube() {
-    let coords = Coords {q: 0, r: 0};
-    if let CoordsKind::Cube {x, y, z} = coords.to_cube() {
+    let coords = Coords { q: 0, r: 0 };
+    if let CoordsKind::Cube { x, y, z } = coords.to_cube() {
         assert_eq!(x, 0);
         assert_eq!(y, 0);
         assert_eq!(z, 0);
@@ -283,15 +306,15 @@ fn convert_to_cube() {
         panic!("Got the wrong type back from to_axial")
     }
 
-    let coords = Coords {q: -2, r: 0};
-    if let CoordsKind::Cube {x, y, z} = coords.to_cube() {
+    let coords = Coords { q: -2, r: 0 };
+    if let CoordsKind::Cube { x, y, z } = coords.to_cube() {
         assert_eq!(x, -2);
         assert_eq!(y, 0);
         assert_eq!(z, 2);
     }
 
-    let coords = Coords {q: 1, r: 1};
-    if let CoordsKind::Cube {x, y, z} = coords.to_cube() {
+    let coords = Coords { q: 1, r: 1 };
+    if let CoordsKind::Cube { x, y, z } = coords.to_cube() {
         assert_eq!(x, 1);
         assert_eq!(y, 1);
         assert_eq!(z, -2);
@@ -300,14 +323,14 @@ fn convert_to_cube() {
 
 #[test]
 fn test_distance() {
-    let coords = Coords { q: 0, r: 0};
-    assert_eq!(coords.distance_to(&Coords{ q: 0, r: 4}), 4);
-    assert_eq!(coords.distance_to(&Coords{ q: -2, r: 3}), 3);
+    let coords = Coords { q: 0, r: 0 };
+    assert_eq!(coords.distance_to(&Coords { q: 0, r: 4 }), 4);
+    assert_eq!(coords.distance_to(&Coords { q: -2, r: 3 }), 3);
 }
 
 #[test]
 fn test_to() {
-    let coords = Coords {q: 0, r: 0};
+    let coords = Coords { q: 0, r: 0 };
 
     let coords1 = coords.to(&Dir::Orient0, 5);
     let coords2 = coords.to(&Dir::Orient60, 24);
@@ -316,12 +339,12 @@ fn test_to() {
     let coords5 = coords.to(&Dir::Orient240, 2);
     let coords6 = coords.to(&Dir::Orient300, 32);
 
-    assert_eq!(coords1, Coords{q: 0, r: 5});
-    assert_eq!(coords2, Coords{q: 24, r: 0});
-    assert_eq!(coords3, Coords{q: 4, r: -4});
-    assert_eq!(coords4, Coords{q: 0, r: -934});
-    assert_eq!(coords5, Coords{q: -2, r: 0});
-    assert_eq!(coords6, Coords{q: -32, r: 32});
+    assert_eq!(coords1, Coords { q: 0, r: 5 });
+    assert_eq!(coords2, Coords { q: 24, r: 0 });
+    assert_eq!(coords3, Coords { q: 4, r: -4 });
+    assert_eq!(coords4, Coords { q: 0, r: -934 });
+    assert_eq!(coords5, Coords { q: -2, r: 0 });
+    assert_eq!(coords6, Coords { q: -32, r: 32 });
 }
 
 #[derive(Debug)]

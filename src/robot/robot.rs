@@ -1,16 +1,16 @@
-use diesel::prelude::*;
 use diesel::pg::PgConnection;
+use diesel::prelude::*;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 
-use crate::utils;
+use super::process::*;
 use crate::grid::*;
 use crate::schema::*;
-use super::process::*;
+use crate::utils;
 
 #[derive(Debug, Queryable, Insertable)]
-#[table_name="robots"]
+#[table_name = "robots"]
 pub struct NewRobot {
     pub name: String,
     pub q: i32,
@@ -19,7 +19,7 @@ pub struct NewRobot {
 }
 
 #[derive(Debug, Queryable, Identifiable, Insertable)]
-#[table_name="robots"]
+#[table_name = "robots"]
 pub struct RobotData {
     pub id: i64,
     pub name: String,
@@ -36,7 +36,7 @@ pub struct RobotData {
 
 /// Represents a grid cell that is known by a robot
 #[derive(Clone, Debug, Queryable, Identifiable, Insertable)]
-#[table_name="robot_known_cells"]
+#[table_name = "robot_known_cells"]
 #[primary_key(robot_id, gridcell_id)]
 pub struct RobotKnownCell {
     pub robot_id: i64,
@@ -50,8 +50,8 @@ impl RobotKnownCell {
     /// Load all the known grid cells for a robot out of memory
     pub fn load_all(conn: &PgConnection, robot_id: i64) -> Vec<RobotKnownCell> {
         let results = robot_known_cells::table
-            .filter(robot_known_cells::robot_id
-            .eq(robot_id)).load::<RobotKnownCell>(conn);
+            .filter(robot_known_cells::robot_id.eq(robot_id))
+            .load::<RobotKnownCell>(conn);
 
         if let Ok(cells) = results {
             cells
@@ -63,9 +63,10 @@ impl RobotKnownCell {
 
 impl PartialEq for RobotKnownCell {
     fn eq(&self, other: &Self) -> bool {
-        let does_match = self.robot_id == other.robot_id 
+        let does_match = self.robot_id == other.robot_id
             && self.gridcell_id == other.gridcell_id
-            && self.q == other.q && self.r == other.q;
+            && self.q == other.q
+            && self.r == other.q;
 
         does_match
     }
@@ -100,8 +101,10 @@ impl Robot {
     /// Load all the robots out of the database
     pub fn load_all(conn: &PgConnection, grid: Arc<Mutex<Grid>>) -> HashMap<i64, Robot> {
         let mut _robots = HashMap::new();
-        let results = robots::table.load::<RobotData>(conn).expect("Failed to load robots");
-        
+        let results = robots::table
+            .load::<RobotData>(conn)
+            .expect("Failed to load robots");
+
         for result in results {
             let id = result.id;
             let mut robot = Robot {
@@ -113,9 +116,10 @@ impl Robot {
                 movement_queue: None,
             };
 
-            if let Ok(known_cells) = robot_known_cells::table.filter(
-                robot_known_cells::robot_id.eq(id)
-            ).load::<RobotKnownCell>(conn) {
+            if let Ok(known_cells) = robot_known_cells::table
+                .filter(robot_known_cells::robot_id.eq(id))
+                .load::<RobotKnownCell>(conn)
+            {
                 robot.known_cells = known_cells;
             }
             _robots.insert(id, robot);
@@ -125,7 +129,12 @@ impl Robot {
     }
 
     /// Create a new robot at the specified coordinates with the specified orientation
-    pub fn new(coords: Coords, orientation: Dir, conn: Option<&PgConnection>, grid: Arc<Mutex<Grid>>) -> Robot {
+    pub fn new(
+        coords: Coords,
+        orientation: Dir,
+        conn: Option<&PgConnection>,
+        grid: Arc<Mutex<Grid>>,
+    ) -> Robot {
         let new_robot = NewRobot {
             name: utils::random_string(8),
             q: coords.q,
@@ -137,7 +146,8 @@ impl Robot {
         if let Some(conn) = conn {
             _robot = diesel::insert_into(robots::table)
                 .values(new_robot)
-                .get_result(conn).expect("Error saving cells");
+                .get_result(conn)
+                .expect("Error saving cells");
         } else {
             _robot = RobotData {
                 id: 0,
@@ -165,7 +175,10 @@ impl Robot {
 
     /// print id and status text
     pub fn ident(&self) {
-        println!("Robot {}: ({},{}) @ {:?}", self.data.id, self.data.q, self.data.r, self.data.orientation);
+        println!(
+            "Robot {}: ({},{}) @ {:?}",
+            self.data.id, self.data.q, self.data.r, self.data.orientation
+        );
     }
 
     /// Update the orientation on turn left
@@ -173,9 +186,9 @@ impl Robot {
         let orientation = self.data.orientation.left(60);
         self.data.orientation = orientation;
 
-        let _ = diesel::update(
-            robots::table.filter(robots::id.eq(self.data.id))
-        ).set(robots::orientation.eq(&orientation)).execute(conn);
+        let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
+            .set(robots::orientation.eq(&orientation))
+            .execute(conn);
     }
 
     /// Update the orientation on turn right
@@ -183,21 +196,25 @@ impl Robot {
         let orientation = self.data.orientation.right(60);
         self.data.orientation = orientation;
 
-        let _ = diesel::update(
-            robots::table.filter(robots::id.eq(self.data.id))
-        ).set(robots::orientation.eq(&orientation)).execute(conn);
+        let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
+            .set(robots::orientation.eq(&orientation))
+            .execute(conn);
     }
 
     /// Take a single step forward and return new coords
     pub fn move_forward(&mut self, conn: &PgConnection) -> Coords {
         let orientation = self.data.orientation;
-        let new_coords = Coords{ q: self.data.q, r: self.data.r }.to(&orientation, 1);
+        let new_coords = Coords {
+            q: self.data.q,
+            r: self.data.r,
+        }
+        .to(&orientation, 1);
         self.data.q = new_coords.q;
         self.data.r = new_coords.r;
 
-        let _ = diesel::update(
-            robots::table.filter(robots::id.eq(self.data.id))
-        ).set((robots::q.eq(self.data.q), robots::r.eq(self.data.r))).execute(conn);
+        let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
+            .set((robots::q.eq(self.data.q), robots::r.eq(self.data.r)))
+            .execute(conn);
 
         new_coords
     }
@@ -244,9 +261,11 @@ impl Robot {
         self.known_cells = new_known_cells;
         let removed_cells = Robot::limit_known_cells(&mut self.known_cells);
 
-        let query = diesel::insert_into(robot_known_cells::table).values(&self.known_cells)
+        let query = diesel::insert_into(robot_known_cells::table)
+            .values(&self.known_cells)
             .on_conflict((robot_known_cells::robot_id, robot_known_cells::gridcell_id))
-            .do_update().set(robot_known_cells::discovery_time.eq(SystemTime::now()))
+            .do_update()
+            .set(robot_known_cells::discovery_time.eq(SystemTime::now()))
             .execute(conn);
 
         if let Err(reason) = query {
@@ -255,12 +274,11 @@ impl Robot {
 
         for removed_cell in removed_cells {
             let query = diesel::delete(
-                robot_known_cells::table.filter(
-                    robot_known_cells::robot_id.eq(removed_cell.robot_id)
-                ).filter(
-                    robot_known_cells::gridcell_id.eq(removed_cell.gridcell_id)
-                )
-            ).execute(conn);
+                robot_known_cells::table
+                    .filter(robot_known_cells::robot_id.eq(removed_cell.robot_id))
+                    .filter(robot_known_cells::gridcell_id.eq(removed_cell.gridcell_id)),
+            )
+            .execute(conn);
             if let Err(reason) = query {
                 println!("Could not update known cells: {:?}", reason);
             }
@@ -270,7 +288,7 @@ impl Robot {
     pub fn limit_known_cells(known_cells: &mut Vec<RobotKnownCell>) -> Vec<RobotKnownCell> {
         known_cells.sort();
         known_cells.reverse();
-        
+
         let mut removed_cells = Vec::new();
         // TODO: the max "memory" should be a property of the memory module
         while known_cells.len() > 19 {
@@ -287,7 +305,7 @@ impl Robot {
         self.visible_others = visible_robots.to_owned().to_vec();
     }
 
-    /// Get a map of coords to full gridcells that this robot knows about 
+    /// Get a map of coords to full gridcells that this robot knows about
     /// and isn't occupied by a known other robot
     pub fn get_known_traversable_cells(&self) -> HashMap<Coords, GridCell> {
         let grid = self.grid.lock().unwrap();
@@ -295,11 +313,21 @@ impl Robot {
         // convert the RobotKnownCell into full gridcells of the known cells
         // we only want to find paths within our known cells
         for known_cell in &self.known_cells {
-            let coords = Coords {q: known_cell.q, r: known_cell.r };
-            let robot_coords = Coords{q: self.data.q, r: self.data.r};
+            let coords = Coords {
+                q: known_cell.q,
+                r: known_cell.r,
+            };
+            let robot_coords = Coords {
+                q: self.data.q,
+                r: self.data.r,
+            };
 
             // ignore any cells with another robot standing on it
-            if self.visible_others.iter().any(|r| r.coords == coords && r.coords != robot_coords) {
+            if self
+                .visible_others
+                .iter()
+                .any(|r| r.coords == coords && r.coords != robot_coords)
+            {
                 continue;
             }
 
@@ -317,12 +345,15 @@ impl Robot {
     }
 
     /// Try to move a robot
-    /// 
+    ///
     /// If moving the robot forward, 1) make sure there isn't a wall, and 2) make sure the
     /// cell isn't occupied; if this conditions fail, return a Fail
-    /// Then update the robot's position or orientation and update grid's `robot_locs` 
+    /// Then update the robot's position or orientation and update grid's `robot_locs`
     pub fn move_robot(&mut self, conn: &PgConnection) -> ProcessResult {
-        let robot_coords = &Coords{q: self.data.q, r: self.data.r};
+        let robot_coords = &Coords {
+            q: self.data.q,
+            r: self.data.r,
+        };
         let orientation = self.data.orientation;
         let next_step = self.get_move();
 
@@ -335,10 +366,10 @@ impl Robot {
         match next_step.unwrap() {
             MoveStep::Left => {
                 self.turn_left(conn);
-            },
+            }
             MoveStep::Right => {
                 self.turn_right(conn);
-            },
+            }
             MoveStep::Forward => {
                 let grid = self.grid.lock().unwrap();
                 let cell = grid.cells.get(robot_coords);
@@ -350,7 +381,11 @@ impl Robot {
                     return ProcessResult::Fail;
                 }
 
-                if grid.robot_locs.get(&robot_coords.to(&orientation, 1)).is_some() {
+                if grid
+                    .robot_locs
+                    .get(&robot_coords.to(&orientation, 1))
+                    .is_some()
+                {
                     return ProcessResult::Fail;
                 }
 
@@ -360,12 +395,12 @@ impl Robot {
                 let mut grid = self.grid.lock().unwrap();
 
                 grid.update_robot_loc(self.data.id, robot_coords.clone(), new_robot_coords);
-            },
+            }
         }
         ProcessResult::Ok
     }
 
-    /// Handles a tick 
+    /// Handles a tick
     pub fn tick(&mut self, conn: &PgConnection) {
         self.ident();
         if let None = self.active_process {
@@ -381,7 +416,7 @@ impl Robot {
         };
 
         match result {
-            ProcessResult::TransitionToMove{..} => {
+            ProcessResult::TransitionToMove { .. } => {
                 if Move::init(conn, self, Some(result)) == ProcessResult::Ok {
                     self.active_process = Some(Processes::Move);
                 }
@@ -390,7 +425,7 @@ impl Robot {
                 Neutral::init(conn, self, Some(result));
                 self.active_process = Some(Processes::Neutral);
             }
-            _ => {},
+            _ => {}
         }
     }
 }
