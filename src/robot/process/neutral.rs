@@ -2,6 +2,7 @@ use diesel::PgConnection;
 use rand::thread_rng;
 use rand::seq::SliceRandom;
 
+use crate::grid::utils::traversal;
 use super::*;
 use super::ProcessResult;
 
@@ -13,8 +14,8 @@ impl Process for Neutral {
     fn run(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
         // println!("Neutral: run");
         let mut _scanned_cells: Vec<Coords> = Vec::new();
-        if let ProcessResult::ScannedCells(cells) = Scan::run(conn, robot, None) {
-            _scanned_cells = cells;
+        if let ProcessResult::ScannedCells(scan_results) = Scan::run(conn, robot, None) {
+            _scanned_cells = scan_results.scanned_cells;
         }
         // println!("Scanned {} cells", scanned_cells.len());
 
@@ -53,14 +54,17 @@ impl Neutral {
 
         let robot_coords = Coords{q: robot.data.q, r: robot.data.r};
 
-        let mut search_order: Vec<Dir> = Dir::get_iter().collect();
+        let mut search_order: Vec<Dir> = Dir::get_vec();
         let mut rng = thread_rng();
         search_order.shuffle(&mut rng);
 
         // make a list of all the coordinates we know about
+        let known_cells = robot.get_known_traversable_cells();
         let mut known_coords: Vec<Coords> = Vec::new();
-        for known_cell in &robot.known_cells {
-            known_coords.push(Coords{ q: known_cell.q, r: known_cell.r });
+        for (coords, _) in &known_cells {
+            if traversal::is_reachable(&robot_coords, &coords, &known_cells, 100) {
+                known_coords.push(*coords);
+            }
         }
 
         known_coords.shuffle(&mut rng);
@@ -74,11 +78,11 @@ impl Neutral {
                 continue;
             }
 
-            // check the edges in random order; if open, see if know the cell beyond it
+            // check the edges in random order; if open, see if we know the cell beyond it
             for orientation in &search_order {
                 if cell.unwrap().get_side(*orientation) != EdgeType::Wall {
                     let test_coords = cell_coords.to(orientation, 1);
-                    if !known_coords.contains(&test_coords)
+                    if !known_coords.contains(&test_coords) && !robot.known_occupied_coords(&test_coords)
                     {
                         if random_pick.is_none() {
                             random_pick = Some((cell_coords, orientation));

@@ -14,8 +14,8 @@ impl Process for Move {
         robot.move_robot(conn);
 
         let mut scanned_cells: Vec<Coords> = Vec::new();
-        if let ProcessResult::ScannedCells(cells) = Scan::run(conn, robot, None) {
-            scanned_cells = cells;
+        if let ProcessResult::ScannedCells(scan_result) = Scan::run(conn, robot, None) {
+            scanned_cells = scan_result.scanned_cells;
         }
         // println!("Scanned {} cells", scanned_cells.len());
 

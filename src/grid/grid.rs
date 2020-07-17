@@ -7,7 +7,7 @@ use crate::schema::*;
 use super::coords::*;
 use super::edge::EdgeType;
 
-#[derive(Debug, Queryable, Insertable)]
+#[derive(Clone, Copy, Debug, Queryable, Insertable)]
 #[table_name="gridcells"]
 pub struct GridCell {
     pub id: i32,
@@ -57,7 +57,7 @@ impl GridCell {
     /// Get the orientations that are walls
     pub fn get_walls(&self) -> Vec<Dir> {
         let mut walls: Vec<Dir> = Vec::new();
-        for dir in Dir::get_iter() {
+        for dir in Dir::get_vec() {
             if self.get_side(dir) == EdgeType::Wall {
                 walls.push(dir);
             }
@@ -237,12 +237,9 @@ impl Grid {
         self.robot_locs.insert(new_coords.clone(), id);
     }
 
-    /// Is a coord visible from another place
-    pub fn is_visible(&self, _start_coords: Coords, _end_coords: Coords) -> bool {
-        // calculate the angle from the x+ horizontal line b/c verticle lines have no slope
-        // let p1: CoordsKind = start_coords.to_flat2d();
-        // let p2: CoordsKind = end_coords.to_flat2d();
-        true
+    /// Get a robot id based on a location
+    pub fn get_robot_by_loc(&self, coords: &Coords) -> Option<&i64> {
+        self.robot_locs.get(coords)
     }
 }
 

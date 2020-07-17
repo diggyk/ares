@@ -21,7 +21,7 @@ pub fn flood_map(
     starting_coords: &Coords, 
     starting_orientation: &Dir, 
     target_coords: &Coords, 
-    known_cells_full: &HashMap<Coords, &GridCell>
+    known_cells_full: &HashMap<Coords, GridCell>
 ) -> HashMap<Coords, FromStep> {
 
     // frontier holds the cells we've discovered that need to be explored
@@ -160,19 +160,7 @@ pub fn path_to_moves(start: CoordsAndDir, path: &Vec<&FromStep>) -> Result<Vec<M
 
 // Given a target coordinate, find a path there using only known cells by this robot
 pub fn find_path(robot: &mut Robot, target_coords: Coords) -> Result<Vec<MoveStep>, String> {
-    let grid = robot.grid.lock().unwrap();
-
-    let mut known_cells_full: HashMap<Coords, &GridCell> = HashMap::new();
-
-    // convert the RobotKnownCell into full gridcells of the known cells
-    // we only want to find paths within our known cells
-    for known_cell in &robot.known_cells {
-        let coords = Coords {q: known_cell.q, r: known_cell.r };
-        if let Some(cell) = grid.cells.get(&coords) {
-            known_cells_full.insert(coords, cell.clone());
-        }
-    }
-
+    let known_cells_full = robot.get_known_traversable_cells();
     let starting_coords = Coords{q: robot.data.q, r: robot.data.r};
 
     // Get a flood map so we know how we would get to each cell
@@ -208,7 +196,7 @@ pub fn find_path(robot: &mut Robot, target_coords: Coords) -> Result<Vec<MoveSte
 pub fn is_reachable(
     starting_coords: &Coords, 
     target_coords: &Coords, 
-    known_cells_full: &HashMap<Coords, &GridCell>,
+    known_cells_full: &HashMap<Coords, GridCell>,
     steps: i32,
 ) -> bool {
     // Get a flood map so we know how we would get to each cell

@@ -3,8 +3,6 @@ use diesel::deserialize::{FromSql, Result};
 use diesel::serialize::{self, Output, ToSql};
 use diesel::sql_types::*;
 use std::io::Write;
-use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
 
 use rand::{
     distributions::{Distribution, Standard},
@@ -20,7 +18,7 @@ pub enum CoordsKind {
 }
 
 #[repr(i16)]
-#[derive(Copy, Clone, Debug, EnumIter, Hash, PartialEq, Eq, AsExpression, FromSqlRow)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, AsExpression, FromSqlRow)]
 #[sql_type = "SmallInt"]
 pub enum Dir {
     Orient0 = 0,
@@ -150,8 +148,8 @@ impl Dir {
         a1.into()
     }
 
-    pub fn get_iter() -> DirIter {
-        Dir::iter()
+    pub fn get_vec() -> Vec<Dir> {
+        vec![Dir::Orient0, Dir::Orient60, Dir::Orient120, Dir::Orient180, Dir::Orient240, Dir::Orient300]
     }
 
     // starting with the given orientation, make a vector of each other

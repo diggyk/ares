@@ -84,7 +84,7 @@ impl Server {
                 last_tick = SystemTime::now();
             }
 
-            // self.wait_for_enter().expect("Not possible");
+            // self._wait_for_enter().expect("Not possible");
         }
     }
 }

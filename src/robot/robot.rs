@@ -90,6 +90,8 @@ pub struct Robot {
     pub grid: Arc<Mutex<Grid>>,
     pub data: RobotData,
     pub known_cells: Vec<RobotKnownCell>,
+    pub visible_others: Vec<VisibleRobot>,
+
     pub active_process: Option<Processes>,
     pub movement_queue: Option<Vec<MoveStep>>,
 }
@@ -106,6 +108,7 @@ impl Robot {
                 grid: grid.clone(),
                 data: result,
                 known_cells: RobotKnownCell::load_all(conn, id),
+                visible_others: Vec::new(),
                 active_process: None,
                 movement_queue: None,
             };
@@ -154,6 +157,7 @@ impl Robot {
             grid,
             data: _robot,
             known_cells: Vec::new(),
+            visible_others: Vec::new(),
             active_process: None,
             movement_queue: None,
         }
@@ -161,7 +165,7 @@ impl Robot {
 
     /// print id and status text
     pub fn ident(&self) {
-        // println!("Robot {}: ({},{}) @ {:?}", self.data.id, self.data.q, self.data.r, self.data.orientation);
+        println!("Robot {}: ({},{}) @ {:?}", self.data.id, self.data.q, self.data.r, self.data.orientation);
     }
 
     /// Update the orientation on turn left
@@ -261,8 +265,6 @@ impl Robot {
                 println!("Could not update known cells: {:?}", reason);
             }
         }
-        
-        println!("Known cells: {}", self.known_cells.len());
     }
 
     pub fn limit_known_cells(known_cells: &mut Vec<RobotKnownCell>) -> Vec<RobotKnownCell> {
@@ -279,6 +281,39 @@ impl Robot {
         }
 
         removed_cells
+    }
+
+    pub fn update_visible_others(&mut self, visible_robots: &Vec<VisibleRobot>) {
+        self.visible_others = visible_robots.to_owned().to_vec();
+    }
+
+    /// Get a map of coords to full gridcells that this robot knows about 
+    /// and isn't occupied by a known other robot
+    pub fn get_known_traversable_cells(&self) -> HashMap<Coords, GridCell> {
+        let grid = self.grid.lock().unwrap();
+        let mut known_cells_full: HashMap<Coords, GridCell> = HashMap::new();
+        // convert the RobotKnownCell into full gridcells of the known cells
+        // we only want to find paths within our known cells
+        for known_cell in &self.known_cells {
+            let coords = Coords {q: known_cell.q, r: known_cell.r };
+            let robot_coords = Coords{q: self.data.q, r: self.data.r};
+
+            // ignore any cells with another robot standing on it
+            if self.visible_others.iter().any(|r| r.coords == coords && r.coords != robot_coords) {
+                continue;
+            }
+
+            if let Some(cell) = grid.cells.get(&coords) {
+                known_cells_full.insert(coords, *cell);
+            }
+        }
+
+        known_cells_full
+    }
+
+    /// Check if the coords are known to be occupied
+    pub fn known_occupied_coords(&self, coords: &Coords) -> bool {
+        self.visible_others.iter().any(|r| r.coords == *coords)
     }
 
     /// Try to move a robot

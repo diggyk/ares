@@ -20,7 +20,7 @@ pub enum ProcessResult {
     /// Indicates the process failed
     Fail,
     /// Result of a scan
-    ScannedCells(Vec<Coords>),
+    ScannedCells(ScanResults),
     /// Transition back to the neutral mode
     TransitionToNeutral,
     /// Indicate a switch to Move; the last bool means to spin 180 at the end
