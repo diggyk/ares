@@ -25,14 +25,14 @@ table! {
 table! {
     robot_modules (robot_id) {
         robot_id -> Int8,
-        m_collector -> Nullable<Varchar>,
-        m_drivesystem -> Nullable<Varchar>,
-        m_exfilbeacon -> Nullable<Varchar>,
-        m_hullbeacon -> Nullable<Varchar>,
-        m_memory -> Nullable<Varchar>,
-        m_power -> Nullable<Varchar>,
-        m_scanner -> Nullable<Varchar>,
-        m_weapons -> Nullable<Varchar>,
+        m_collector -> Varchar,
+        m_drivesystem -> Varchar,
+        m_exfilbeacon -> Varchar,
+        m_hull -> Varchar,
+        m_memory -> Varchar,
+        m_power -> Varchar,
+        m_scanner -> Varchar,
+        m_weapons -> Varchar,
     }
 }
 

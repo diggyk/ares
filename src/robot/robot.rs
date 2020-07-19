@@ -30,9 +30,6 @@ pub struct RobotData {
     pub q: i32,
     pub r: i32,
     pub orientation: Dir,
-    pub gridcell: Option<i32>,
-    pub components: Option<serde_json::Value>,
-    pub configs: Option<serde_json::Value>,
     pub power: i32,
 }
 
@@ -88,6 +85,69 @@ impl PartialOrd for RobotKnownCell {
     }
 }
 
+/// Represents the modules loaded for this robot
+#[derive(Clone, Debug, Queryable, Identifiable, Insertable, PartialEq)]
+#[table_name = "robot_modules"]
+#[primary_key(robot_id)]
+pub struct RobotModules {
+    pub robot_id: i64,
+    pub m_collector: String,
+    pub m_drivesystem: String,
+    pub m_exfilbeacon: String,
+    pub m_hull: String,
+    pub m_memory: String,
+    pub m_power: String,
+    pub m_scanner: String,
+    pub m_weapons: String,
+}
+
+impl RobotModules {
+    /// Create a new robot modules struct without persisting to the db
+    pub fn new(
+        robot_id: i64,
+        modmap: Option<HashMap<String, String>>,
+        conn: Option<&PgConnection>,
+    ) -> RobotModules {
+        let mut modules = RobotModules {
+            robot_id,
+            m_collector: String::from("basic"),
+            m_drivesystem: String::from("basic"),
+            m_exfilbeacon: String::from("basic"),
+            m_hull: String::from("basic"),
+            m_memory: String::from("basic"),
+            m_power: String::from("basic"),
+            m_scanner: String::from("basic"),
+            m_weapons: String::from("basic"),
+        };
+
+        if modmap.is_some() {
+            for (key, val) in modmap.unwrap().iter() {
+                match key.as_str() {
+                    "m_collector" => modules.m_collector = val.to_string(),
+                    "m_drivesystem" => modules.m_drivesystem = val.to_string(),
+                    "m_exfilbeacon" => modules.m_exfilbeacon = val.to_string(),
+                    "m_hull" => modules.m_hull = val.to_string(),
+                    "m_memory" => modules.m_memory = val.to_string(),
+                    "m_scanner" => modules.m_scanner = val.to_string(),
+                    "m_weapon" => modules.m_weapons = val.to_string(),
+                    _ => continue,
+                }
+            }
+        }
+
+        if let Some(conn) = conn {
+            if let Err(_) = diesel::insert_into(robot_modules::table)
+                .values(&modules)
+                .execute(conn)
+            {
+                println!("Error saving modules");
+            }
+        }
+
+        modules
+    }
+}
+
 pub struct Robot {
     pub grid: Arc<Mutex<Grid>>,
     pub data: RobotData,
@@ -97,8 +157,7 @@ pub struct Robot {
     pub active_process: Option<Processes>,
     pub movement_queue: Option<Vec<MoveStep>>,
 
-    pub m_power: Option<Box<dyn PowerModule>>,
-    pub m_scanner: Option<Box<dyn ScannerModule>>,
+    pub modules: RobotModules,
 }
 
 impl Robot {
@@ -118,8 +177,7 @@ impl Robot {
                 visible_others: Vec::new(),
                 active_process: None,
                 movement_queue: None,
-                m_power: None,
-                m_scanner: None,
+                modules: RobotModules::new(id, None, None),
             };
 
             if let Ok(known_cells) = robot_known_cells::table
@@ -127,6 +185,13 @@ impl Robot {
                 .load::<RobotKnownCell>(conn)
             {
                 robot.known_cells = known_cells;
+            }
+
+            if let Ok(loaded_modules) = robot_modules::table
+                .filter(robot_modules::robot_id.eq(id))
+                .get_result::<RobotModules>(conn)
+            {
+                robot.modules = loaded_modules;
             }
             _robots.insert(id, robot);
         }
@@ -140,6 +205,7 @@ impl Robot {
         orientation: Dir,
         conn: Option<&PgConnection>,
         grid: Arc<Mutex<Grid>>,
+        modules: Option<HashMap<String, String>>,
     ) -> Robot {
         let new_robot = NewRobot {
             name: utils::random_string(8),
@@ -163,12 +229,11 @@ impl Robot {
                 q: coords.q,
                 r: coords.r,
                 orientation,
-                gridcell: None,
-                components: None,
-                configs: None,
                 power: 0,
             }
         }
+
+        let modules = RobotModules::new(_robot.id, modules, conn);
 
         Robot {
             grid,
@@ -177,8 +242,7 @@ impl Robot {
             visible_others: Vec::new(),
             active_process: None,
             movement_queue: None,
-            m_power: None,
-            m_scanner: None,
+            modules: modules,
         }
     }
 

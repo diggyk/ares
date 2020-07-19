@@ -65,6 +65,7 @@ impl Server {
             orientation,
             Some(&self.config.conn),
             self.grid.clone(),
+            None,
         );
         grid.robot_locs.insert(coords.clone(), robot.data.id);
         self.robots.insert(robot.data.id, robot);
