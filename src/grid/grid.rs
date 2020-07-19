@@ -208,11 +208,6 @@ impl Grid {
     ) -> Vec<&GridCell> {
         let mut found_cells = Vec::new();
 
-        // add our current cell
-        if let Some(cell) = self.cells.get(&start_coords) {
-            found_cells.push(cell);
-        }
-
         let start_arm_dir = dir.left(fov / 2);
 
         // we want to sweep in arcs, moving out by radius to max distance
@@ -239,6 +234,11 @@ impl Grid {
                     }
                 }
             }
+        }
+
+        // add our current cell
+        if let Some(cell) = self.cells.get(&start_coords) {
+            found_cells.push(cell);
         }
 
         found_cells

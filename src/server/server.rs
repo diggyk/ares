@@ -7,6 +7,7 @@ use super::ServerConfig;
 use crate::grid::Coords;
 use crate::grid::Dir;
 use crate::grid::Grid;
+use crate::robot::modules::*;
 use crate::robot::Robot;
 
 /// ARES Server internal state
@@ -60,12 +61,33 @@ impl Server {
         let mut grid = self.grid.lock().expect("Could not get lock on grid");
         let coords = grid.get_random_open_cell();
         let orientation: Dir = rand::random();
+
+        let mut modules: HashMap<String, String> = HashMap::new();
+        let scanner_module = scanner::ScannerModule::get_random();
+        modules.insert("m_scanner".to_string(), scanner_module.to_string());
+
+        let memory_module = match scanner_module.as_str() {
+            "basic" => "basic",
+            "plus" => "basic",
+            "triscan" => "basic",
+            "triscan_advanced" => "plus",
+            "triscan_ultra" => "plus",
+            "boxium_started" => "plus",
+            "boxium_advanced" => "ikito",
+            "boxium_ultra" => "jindai",
+            "omni_basic" => "jindai",
+            "omni_ultra" => "jindai",
+            _ => "basic",
+        };
+
+        modules.insert("m_memory".to_string(), memory_module.to_string());
+
         let robot = Robot::new(
             coords.clone(),
             orientation,
             Some(&self.config.conn),
             self.grid.clone(),
-            None,
+            Some(modules),
         );
         grid.robot_locs.insert(coords.clone(), robot.data.id);
         self.robots.insert(robot.data.id, robot);

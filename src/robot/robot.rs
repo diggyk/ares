@@ -332,7 +332,6 @@ impl Robot {
         }
 
         self.known_cells = new_known_cells;
-        let removed_cells = Robot::limit_known_cells(&mut self.known_cells);
 
         let query = diesel::insert_into(robot_known_cells::table)
             .values(&self.known_cells)
@@ -343,6 +342,22 @@ impl Robot {
 
         if let Err(reason) = query {
             println!("Could not update known cells: {:?}", reason);
+        }
+
+        self.limit_known_cells(conn);
+    }
+
+    pub fn limit_known_cells(&mut self, conn: &PgConnection) {
+        self.known_cells.sort();
+        self.known_cells.reverse();
+
+        let mem_limit = memory::MemoryModule::get_memory_size(self.modules.m_memory.as_str());
+        let mut removed_cells = Vec::new();
+        while self.known_cells.len() > mem_limit {
+            let cell = self.known_cells.pop();
+            if cell.is_some() {
+                removed_cells.push(cell.unwrap());
+            }
         }
 
         for removed_cell in removed_cells {
@@ -356,22 +371,6 @@ impl Robot {
                 println!("Could not update known cells: {:?}", reason);
             }
         }
-    }
-
-    pub fn limit_known_cells(known_cells: &mut Vec<RobotKnownCell>) -> Vec<RobotKnownCell> {
-        known_cells.sort();
-        known_cells.reverse();
-
-        let mut removed_cells = Vec::new();
-        // TODO: the max "memory" should be a property of the memory module
-        while known_cells.len() > 19 {
-            let cell = known_cells.pop();
-            if cell.is_some() {
-                removed_cells.push(cell.unwrap());
-            }
-        }
-
-        removed_cells
     }
 
     pub fn update_visible_others(&mut self, visible_robots: &Vec<VisibleRobot>) {

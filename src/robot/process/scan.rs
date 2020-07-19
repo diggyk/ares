@@ -36,8 +36,10 @@ impl Process for Scan {
         };
         let grid = robot.grid.lock().unwrap();
 
-        // For now, let's scan in a 120 for distance of 2
-        let cells = grid.get_cells(&our_coords, robot.data.orientation, 120, 1);
+        let fov = scanner::ScannerModule::get_fov(&robot.modules.m_scanner);
+        let range = scanner::ScannerModule::get_range(&robot.modules.m_scanner);
+
+        let cells = grid.get_cells(&our_coords, robot.data.orientation, fov, range);
         let cells_full: HashMap<Coords, GridCell> = cells
             .iter()
             .map(|cell| {
