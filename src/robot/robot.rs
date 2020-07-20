@@ -31,6 +31,8 @@ pub struct RobotData {
     pub r: i32,
     pub orientation: Dir,
     pub power: i32,
+    pub max_power: i32,
+    pub recharge_rate: i32,
 }
 
 /// Represents a grid cell that is known by a robot
@@ -230,12 +232,14 @@ impl Robot {
                 r: coords.r,
                 orientation,
                 power: 0,
+                max_power: 0,
+                recharge_rate: 0,
             }
         }
 
         let modules = RobotModules::new(_robot.id, modules, conn);
 
-        Robot {
+        let mut robot = Robot {
             grid,
             data: _robot,
             known_cells: Vec::new(),
@@ -243,6 +247,28 @@ impl Robot {
             active_process: None,
             movement_queue: None,
             modules: modules,
+        };
+
+        robot.update_max_power(conn);
+
+        robot
+    }
+
+    /// update the max power based on the power module
+    pub fn update_max_power(&mut self, conn: Option<&PgConnection>) {
+        let max_power = power::PowerModule::get_max_power(self.modules.m_power.as_str());
+        let recharge_rate = power::PowerModule::get_recharge_rate(self.modules.m_power.as_str());
+
+        self.data.max_power = max_power;
+        self.data.recharge_rate = recharge_rate;
+
+        if let Some(conn) = conn {
+            let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
+                .set((
+                    robots::max_power.eq(max_power),
+                    robots::recharge_rate.eq(max_power),
+                ))
+                .execute(conn);
         }
     }
 

@@ -46,6 +46,8 @@ table! {
         r -> Int4,
         orientation -> Int2,
         power -> Int4,
+        max_power -> Int4,
+        recharge_rate -> Int4,
     }
 }
 

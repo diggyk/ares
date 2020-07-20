@@ -1,7 +1,7 @@
 pub struct PowerModule {}
 
 impl PowerModule {
-    fn get_max_power(name: &str) -> i32 {
+    pub fn get_max_power(name: &str) -> i32 {
         match name {
             "basic" => 1000,
             "plus" => 1500,
@@ -10,7 +10,7 @@ impl PowerModule {
         }
     }
 
-    fn get_recharge_rate(name: &str) -> i32 {
+    pub fn get_recharge_rate(name: &str) -> i32 {
         match name {
             "basic" => 150,
             "plus" => 300,
