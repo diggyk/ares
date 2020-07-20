@@ -182,7 +182,9 @@ impl Grid {
 
             if self.cells.contains_key(&test_coords) {
                 if self.cells.get(&test_coords).unwrap().is_open() {
-                    if !self.robot_locs.contains_key(&test_coords) {
+                    if !self.robot_locs.contains_key(&test_coords)
+                        && !self.valuables_locs.contains_key(&test_coords)
+                    {
                         found_coords = Some(test_coords);
                     }
                 }

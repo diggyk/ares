@@ -36,7 +36,6 @@ where
     }
 }
 
-
 impl From<i32> for EdgeType {
     fn from(item: i32) -> EdgeType {
         if item == 0 {
@@ -86,7 +85,7 @@ fn convert_int_and_edge_type() {
 
     let i0: i32 = EdgeType::Open.into();
     assert_eq!(i0, 0);
-    
+
     let i1: i32 = EdgeType::Wall.into();
     assert_eq!(i1, 1);
 }

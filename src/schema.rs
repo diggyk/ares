@@ -56,9 +56,7 @@ table! {
         id -> Int8,
         q -> Int4,
         r -> Int4,
-        gridcell -> Int4,
-        #[sql_name = "type"]
-        type_ -> Int2,
+        kind -> Varchar,
         amount -> Int4,
     }
 }

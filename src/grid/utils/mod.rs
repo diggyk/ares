@@ -1,19 +1,19 @@
 pub mod traversal;
 pub use traversal::*;
 
-use rand::Rng;
 use rand::seq::SliceRandom;
+use rand::Rng;
 use std::collections::HashMap;
 
 use super::*;
 
 pub fn generate_cells(size: i32) -> HashMap<Coords, GridCell> {
     let mut cells: HashMap<Coords, GridCell> = HashMap::new();
-    let root_coords = Coords {q: 0, r: 0};
+    let root_coords = Coords { q: 0, r: 0 };
     let mut cell_count = 0;
     let root_cell = GridCell::new(cell_count, &root_coords);
 
-    cells.insert(Coords {q: 0, r: 0}, root_cell);
+    cells.insert(Coords { q: 0, r: 0 }, root_cell);
 
     // CREATE CELLS
     // for each radius
@@ -34,14 +34,14 @@ pub fn generate_cells(size: i32) -> HashMap<Coords, GridCell> {
     }
 
     if size > 3 {
-        add_rooms(&mut cells, size/2);
+        add_rooms(&mut cells, size / 2);
         for _ in 0..size * 2 {
             make_path(&mut cells);
         }
     } else {
         make_room(&mut cells, &root_coords, size);
     }
-    
+
     enforce_outer_walls(&mut cells, size);
 
     cells
@@ -51,11 +51,15 @@ fn add_rooms(cells: &mut HashMap<Coords, GridCell>, size: i32) {
     let mut rng = rand::thread_rng();
 
     let coords: Vec<Coords> = cells.keys().map(|i| i.clone()).collect();
-    let max_size = size/2;
-    let num_rooms = size/2;
+    let max_size = size / 2;
+    let num_rooms = size / 2;
 
     for _ in 0..num_rooms {
-        let size = if size > 2 {rng.gen_range(1, max_size)} else { size };
+        let size = if size > 2 {
+            rng.gen_range(1, max_size)
+        } else {
+            size
+        };
         let root_coords = coords.choose(&mut rng).unwrap();
         make_room(cells, &root_coords, size);
     }
@@ -113,7 +117,7 @@ fn make_path(cells: &mut HashMap<Coords, GridCell>) {
     while valid_cell {
         length -= 1;
         create_edge_between_cells(cells, &current_coord, current_dir, EdgeType::Open);
-        
+
         if length <= 0 {
             length = rng.gen_range(1, 10);
             current_dir = walls.choose(&mut rng).unwrap();
@@ -128,10 +132,9 @@ fn make_path(cells: &mut HashMap<Coords, GridCell>) {
     }
 }
 
-
 /// Make sure our outer boundry has walls
 fn enforce_outer_walls(cells: &mut HashMap<Coords, GridCell>, size: i32) {
-    let root_coords = Coords {q: 0, r: 0};
+    let root_coords = Coords { q: 0, r: 0 };
     let mut coords = root_coords.to(&super::Dir::Orient240, size);
 
     for angle in (0..360).step_by(60) {
@@ -145,7 +148,12 @@ fn enforce_outer_walls(cells: &mut HashMap<Coords, GridCell>, size: i32) {
 }
 
 /// Create a wall for a cell and it's neighbor
-fn create_edge_between_cells(cells: &mut HashMap<Coords, GridCell>, coords: &Coords, dir: &Dir, edge_type: EdgeType) {
+fn create_edge_between_cells(
+    cells: &mut HashMap<Coords, GridCell>,
+    coords: &Coords,
+    dir: &Dir,
+    edge_type: EdgeType,
+) {
     let cell = cells.get_mut(&coords).unwrap();
     cell.change_side(dir, edge_type);
 
@@ -155,35 +163,52 @@ fn create_edge_between_cells(cells: &mut HashMap<Coords, GridCell>, coords: &Coo
     }
 }
 
-fn enforce_perimeter_wall(cells: &mut HashMap<Coords, GridCell>, coords: &Coords, dir: &Dir, last: bool){
+fn enforce_perimeter_wall(
+    cells: &mut HashMap<Coords, GridCell>,
+    coords: &Coords,
+    dir: &Dir,
+    last: bool,
+) {
     match dir {
         Dir::Orient0 => {
-            if last { create_edge_between_cells(cells, coords, &Dir::Orient0, EdgeType::Wall) }
+            if last {
+                create_edge_between_cells(cells, coords, &Dir::Orient0, EdgeType::Wall)
+            }
             create_edge_between_cells(cells, coords, &Dir::Orient240, EdgeType::Wall);
             create_edge_between_cells(cells, coords, &Dir::Orient300, EdgeType::Wall);
-        },
+        }
         Dir::Orient60 => {
-            if last { create_edge_between_cells(cells, coords, &Dir::Orient60, EdgeType::Wall) }
+            if last {
+                create_edge_between_cells(cells, coords, &Dir::Orient60, EdgeType::Wall)
+            }
             create_edge_between_cells(cells, coords, &Dir::Orient300, EdgeType::Wall);
             create_edge_between_cells(cells, coords, &Dir::Orient0, EdgeType::Wall);
-        },
+        }
         Dir::Orient120 => {
-            if last { create_edge_between_cells(cells, coords, &Dir::Orient120, EdgeType::Wall) }
+            if last {
+                create_edge_between_cells(cells, coords, &Dir::Orient120, EdgeType::Wall)
+            }
             create_edge_between_cells(cells, coords, &Dir::Orient0, EdgeType::Wall);
             create_edge_between_cells(cells, coords, &Dir::Orient60, EdgeType::Wall);
-        },
+        }
         Dir::Orient180 => {
-            if last { create_edge_between_cells(cells, coords, &Dir::Orient180, EdgeType::Wall) }
+            if last {
+                create_edge_between_cells(cells, coords, &Dir::Orient180, EdgeType::Wall)
+            }
             create_edge_between_cells(cells, coords, &Dir::Orient60, EdgeType::Wall);
             create_edge_between_cells(cells, coords, &Dir::Orient120, EdgeType::Wall);
-        },
+        }
         Dir::Orient240 => {
-            if last { create_edge_between_cells(cells, coords, &Dir::Orient240, EdgeType::Wall) }
+            if last {
+                create_edge_between_cells(cells, coords, &Dir::Orient240, EdgeType::Wall)
+            }
             create_edge_between_cells(cells, coords, &Dir::Orient120, EdgeType::Wall);
             create_edge_between_cells(cells, coords, &Dir::Orient180, EdgeType::Wall);
-        },
+        }
         Dir::Orient300 => {
-            if last { create_edge_between_cells(cells, coords, &Dir::Orient300, EdgeType::Wall) }
+            if last {
+                create_edge_between_cells(cells, coords, &Dir::Orient300, EdgeType::Wall)
+            }
             create_edge_between_cells(cells, coords, &Dir::Orient180, EdgeType::Wall);
             create_edge_between_cells(cells, coords, &Dir::Orient240, EdgeType::Wall);
         }

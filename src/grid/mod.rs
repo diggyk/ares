@@ -7,4 +7,3 @@ pub use coords::*;
 pub use edge::*;
 pub use grid::*;
 pub use utils::*;
-

@@ -1,5 +1,5 @@
-use rand::{thread_rng, Rng};
 use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
 
 pub fn random_string(n: usize) -> String {
     thread_rng().sample_iter(&Alphanumeric).take(n).collect()
@@ -10,7 +10,8 @@ pub fn get_angle(x1: f64, y1: f64) -> f64 {
     let x2 = 100.0;
     let y2 = 0.0;
 
-    let ang1 = ((x1*x2) + (y1*y2))/((x1.powi(2) + y1.powi(2)).sqrt()*(x2.powi(2) + y2.powi(2)).sqrt());
+    let ang1 = ((x1 * x2) + (y1 * y2))
+        / ((x1.powi(2) + y1.powi(2)).sqrt() * (x2.powi(2) + y2.powi(2)).sqrt());
 
     let ang1 = (ang1.acos() * 180.0 / std::f64::consts::PI).round() - 90.0;
 
