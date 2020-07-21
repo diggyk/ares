@@ -509,7 +509,7 @@ impl Robot {
     }
 
     /// Handles a tick
-    pub fn tick(&mut self, conn: &PgConnection) {
+    pub fn tick(&mut self, conn: &PgConnection) -> Option<Request> {
         self.ident();
         if let None = self.active_process {
             self.active_process = Some(Processes::Neutral);
@@ -530,12 +530,12 @@ impl Robot {
             Some(ProcessResult::TransitionToCollect { .. }) => {
                 if Collect::init(conn, self, result) == ProcessResult::Ok {
                     self.active_process = Some(Processes::Collect);
-                }
+                };
             }
             Some(ProcessResult::TransitionToMove { .. }) => {
                 if Move::init(conn, self, result) == ProcessResult::Ok {
                     self.active_process = Some(Processes::Move);
-                }
+                };
             }
             Some(ProcessResult::TransitionToNeutral) => {
                 Neutral::init(conn, self, result);
@@ -543,5 +543,7 @@ impl Robot {
             }
             _ => {}
         }
+
+        None
     }
 }
