@@ -5,6 +5,7 @@ use super::*;
 use crate::grid::utils::traversal::is_reachable;
 use crate::grid::*;
 use crate::robot::*;
+use crate::server::*;
 
 /// Holds information about robots visible from the last scan
 #[derive(Clone, Debug, PartialEq)]

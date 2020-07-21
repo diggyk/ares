@@ -115,7 +115,7 @@ impl Server {
         let mut grid = self.grid.lock().expect("Could not get lock on grid");
         let coords = grid.get_random_open_cell();
         let mut rng = rand::thread_rng();
-        let amount: i32 = rng.gen_range(100, 10000);
+        let amount: i32 = rng.gen_range(100, 200);
 
         let valuable = Valuable::new(coords.clone(), amount, Some(&self.config.conn));
 
@@ -145,6 +145,19 @@ impl Server {
             for (_, robot) in &mut self.robots {
                 robot.ident();
                 robot.tick(&self.config.conn);
+            }
+
+            // see if the valuables have been exhausted and delete them
+            let mut deleted_valuables: Vec<i64> = Vec::new();
+            for (id, valuable) in &mut self.valuables {
+                if valuable.amount == 0 {
+                    if valuable.destroy(&self.config.conn) == true {
+                        deleted_valuables.push(*id);
+                    }
+                }
+            }
+            for id in deleted_valuables {
+                self.valuables.remove(&id);
             }
 
             // Wait for remainer of the tick time

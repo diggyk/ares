@@ -12,6 +12,7 @@ pub use scan::*;
 
 use super::Robot;
 use crate::grid::*;
+use crate::server::*;
 
 /// Message returned from a process run to let robot know what to do next
 #[derive(Clone, Debug, PartialEq)]
@@ -24,6 +25,8 @@ pub enum ProcessResult {
     Collected(i32, i32),
     /// Result of a scan
     ScannedCells(ScanResults),
+    /// Request something from the server
+    ServerRequest(Request),
     /// Transition to collect
     TransitionToCollect(i32),
     /// Transition back to the neutral mode

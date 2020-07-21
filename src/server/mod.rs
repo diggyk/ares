@@ -94,3 +94,16 @@ pub fn get_config() -> ServerConfig {
         max_valuables,
     }
 }
+
+/// With each tick, a robot can make a request of the server
+#[derive(Clone, Debug, PartialEq)]
+pub enum Request {
+    /// Request to mine the valuable for a given amount
+    Mine { valuable_id: i64, amount: i32 },
+}
+
+/// For each server request, the server can respond to the robot
+#[derive(Clone, Debug, PartialEq)]
+pub enum Response {
+    Mined { valuable_id: i64, amount: i32 },
+}
