@@ -5,6 +5,7 @@ use rand::thread_rng;
 use super::ProcessResult;
 use super::*;
 use crate::grid::utils::traversal;
+use crate::robot::modules::collector::*;
 
 pub struct Neutral {}
 
@@ -13,6 +14,11 @@ impl Process for Neutral {
     /// Main run of the Neutral process
     fn run(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
         // println!("Neutral: run");
+        let robot_coords = Coords {
+            q: robot.data.q,
+            r: robot.data.r,
+        };
+
         let mut _scanned_cells: Vec<Coords> = Vec::new();
         let mut _visible_robots: Vec<VisibleRobot> = Vec::new();
         let mut _visible_valuables: Vec<VisibleValuable> = Vec::new();
@@ -36,11 +42,15 @@ impl Process for Neutral {
             );
 
             if closest_coords.is_some() {
-                return ProcessResult::TransitionToMove(
-                    closest_coords.unwrap(),
-                    Dir::get_random(),
-                    false,
-                );
+                let closest_coords = closest_coords.unwrap();
+
+                if closest_coords == robot_coords {
+                    let max_to_mine =
+                        CollectorModule::get_collection_max(robot.modules.m_collector.as_str());
+                    return ProcessResult::TransitionToCollect(max_to_mine);
+                }
+
+                return ProcessResult::TransitionToMove(closest_coords, Dir::get_random(), false);
             }
         }
         // TODO: If spotted, Valuables, switch to Move

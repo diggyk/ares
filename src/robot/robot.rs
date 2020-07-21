@@ -161,6 +161,8 @@ pub struct Robot {
     pub movement_queue: Option<Vec<MoveStep>>,
 
     pub modules: RobotModules,
+
+    last_result: Option<ProcessResult>,
 }
 
 impl Robot {
@@ -182,6 +184,7 @@ impl Robot {
                 active_process: None,
                 movement_queue: None,
                 modules: RobotModules::new(id, None, None),
+                last_result: None,
             };
 
             if let Ok(known_cells) = robot_known_cells::table
@@ -250,6 +253,7 @@ impl Robot {
             active_process: None,
             movement_queue: None,
             modules: modules,
+            last_result: None,
         };
 
         robot.update_max_power(conn);
@@ -514,20 +518,36 @@ impl Robot {
 
         let process = self.active_process.as_ref().unwrap().clone();
 
-        let result = match process {
-            Processes::Move => Move::run(conn, self, None),
-            Processes::Neutral => Neutral::run(conn, self, None),
-            Processes::Scan => ProcessResult::Ok,
+        self.last_result = match process {
+            Processes::Collect => Some(Collect::run(conn, self, self.last_result.clone())),
+            Processes::Move => Some(Move::run(conn, self, None)),
+            Processes::Neutral => Some(Neutral::run(conn, self, None)),
+            Processes::Scan => Some(ProcessResult::Ok),
         };
 
-        match result {
-            ProcessResult::TransitionToMove { .. } => {
-                if Move::init(conn, self, Some(result)) == ProcessResult::Ok {
+        // If we are transitioning, initialize it
+        // If we are collecting, see if we have mined the max amount
+        match self.last_result {
+            Some(ProcessResult::Collected(mined, max_to_mine)) => {
+                if mined >= max_to_mine {
+                    Neutral::init(conn, self, self.last_result.clone());
+                    self.active_process = Some(Processes::Neutral);
+                }
+            }
+            Some(ProcessResult::TransitionToCollect { .. }) => {
+                let process_result = Collect::init(conn, self, self.last_result.clone());
+                if let ProcessResult::Collected(..) = process_result {
+                    self.active_process = Some(Processes::Collect);
+                    self.last_result = Some(process_result);
+                }
+            }
+            Some(ProcessResult::TransitionToMove { .. }) => {
+                if Move::init(conn, self, self.last_result.clone()) == ProcessResult::Ok {
                     self.active_process = Some(Processes::Move);
                 }
             }
-            ProcessResult::TransitionToNeutral => {
-                Neutral::init(conn, self, Some(result));
+            Some(ProcessResult::TransitionToNeutral) => {
+                Neutral::init(conn, self, self.last_result.clone());
                 self.active_process = Some(Processes::Neutral);
             }
             _ => {}
