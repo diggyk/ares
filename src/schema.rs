@@ -49,6 +49,7 @@ table! {
         max_power -> Int4,
         recharge_rate -> Int4,
         mined_amount -> Int4,
+        val_inventory -> Int4,
     }
 }
 
