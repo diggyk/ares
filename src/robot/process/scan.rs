@@ -94,12 +94,28 @@ impl Process for Scan {
                         },
                     });
                 }
+
+                // and then see if there are valuables in that cell
+                let valuable = grid.get_valuable_by_loc(&Coords {
+                    q: cell.q,
+                    r: cell.r,
+                });
+                if valuable.is_some() {
+                    visible_valuables.push(VisibleValuable {
+                        valuable_id: *valuable.unwrap(),
+                        coords: Coords {
+                            q: cell.q,
+                            r: cell.r,
+                        },
+                    })
+                }
             }
         }
 
         drop(grid);
         robot.update_known_cells(conn, known_cells);
         robot.update_visible_others(&visible_robots);
+        robot.update_visible_valuables(&visible_valuables);
 
         ProcessResult::ScannedCells(ScanResults {
             scanned_cells,

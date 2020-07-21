@@ -256,6 +256,11 @@ impl Grid {
     pub fn get_robot_by_loc(&self, coords: &Coords) -> Option<&i64> {
         self.robot_locs.get(coords)
     }
+
+    /// Get a valuable id based on a location
+    pub fn get_valuable_by_loc(&self, coords: &Coords) -> Option<&i64> {
+        self.valuables_locs.get(coords)
+    }
 }
 
 #[cfg(test)]

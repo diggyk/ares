@@ -2,6 +2,7 @@ use diesel::backend::Backend;
 use diesel::deserialize::{FromSql, Result};
 use diesel::serialize::{self, Output, ToSql};
 use diesel::sql_types::*;
+use rand::seq::SliceRandom;
 use std::io::Write;
 
 use rand::{
@@ -157,6 +158,12 @@ impl Dir {
             Dir::Orient240,
             Dir::Orient300,
         ]
+    }
+
+    pub fn get_random() -> Dir {
+        let dirs = Dir::get_vec();
+        let mut rng = rand::thread_rng();
+        *dirs.choose(&mut rng).unwrap()
     }
 
     // starting with the given orientation, make a vector of each other

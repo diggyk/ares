@@ -14,15 +14,35 @@ impl Process for Neutral {
     fn run(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
         // println!("Neutral: run");
         let mut _scanned_cells: Vec<Coords> = Vec::new();
+        let mut _visible_robots: Vec<VisibleRobot> = Vec::new();
+        let mut _visible_valuables: Vec<VisibleValuable> = Vec::new();
+
         if let ProcessResult::ScannedCells(scan_results) = Scan::run(conn, robot, None) {
             _scanned_cells = scan_results.scanned_cells;
+            _visible_robots = scan_results.visible_robots;
+            _visible_valuables = scan_results.visible_valuables;
         }
-        // println!("Scanned {} cells", scanned_cells.len());
 
         // TODO: If Others, switch to Fight or Flight
 
         // TODO: If on valuables, switch to Collect
+        if _visible_valuables.len() > 0 {
+            let closest_coords = Neutral::find_closest_coords(
+                &Coords {
+                    q: robot.data.q,
+                    r: robot.data.r,
+                },
+                _visible_valuables.iter().map(|v| v.coords).collect(),
+            );
 
+            if closest_coords.is_some() {
+                return ProcessResult::TransitionToMove(
+                    closest_coords.unwrap(),
+                    Dir::get_random(),
+                    false,
+                );
+            }
+        }
         // TODO: If spotted, Valuables, switch to Move
 
         // TODO: Time to exfiltrate?
@@ -46,6 +66,20 @@ impl Neutral {
     fn next(robot: &Robot) -> ProcessResult {
         // find random unexplore cell
         return Neutral::goto_random_unexplored_cell(robot);
+    }
+
+    fn find_closest_coords(coords: &Coords, locs: Vec<Coords>) -> Option<Coords> {
+        let mut closest: Option<Coords> = None;
+        let mut shortest_distance = 100;
+        for coord in locs {
+            let distance = coords.distance_to(&coord);
+            if distance < shortest_distance {
+                closest = Some(coord);
+                shortest_distance = distance;
+            }
+        }
+
+        closest
     }
 
     fn goto_random_unexplored_cell(robot: &Robot) -> ProcessResult {

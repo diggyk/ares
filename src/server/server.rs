@@ -62,6 +62,7 @@ impl Server {
         }
 
         grid.lock().unwrap().robot_locs = robot_locs;
+        grid.lock().unwrap().valuables_locs = valuables_locs;
 
         Server {
             config,
@@ -133,11 +134,11 @@ impl Server {
     pub fn run(&mut self) {
         let mut last_tick = SystemTime::now();
         while !self.shutdown {
-            if self.robots.len() < self.config.max_bots {
+            while self.robots.len() < self.config.max_bots {
                 self.spawn_robot();
             }
 
-            if self.valuables.len() < self.config.max_valuables {
+            while self.valuables.len() < self.config.max_valuables {
                 self.spawn_valuable();
             }
 

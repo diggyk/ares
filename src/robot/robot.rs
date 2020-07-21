@@ -155,6 +155,7 @@ pub struct Robot {
     pub data: RobotData,
     pub known_cells: Vec<RobotKnownCell>,
     pub visible_others: Vec<VisibleRobot>,
+    pub visible_valuables: Vec<VisibleValuable>,
 
     pub active_process: Option<Processes>,
     pub movement_queue: Option<Vec<MoveStep>>,
@@ -177,6 +178,7 @@ impl Robot {
                 data: result,
                 known_cells: RobotKnownCell::load_all(conn, id),
                 visible_others: Vec::new(),
+                visible_valuables: Vec::new(),
                 active_process: None,
                 movement_queue: None,
                 modules: RobotModules::new(id, None, None),
@@ -244,6 +246,7 @@ impl Robot {
             data: _robot,
             known_cells: Vec::new(),
             visible_others: Vec::new(),
+            visible_valuables: Vec::new(),
             active_process: None,
             movement_queue: None,
             modules: modules,
@@ -401,6 +404,10 @@ impl Robot {
 
     pub fn update_visible_others(&mut self, visible_robots: &Vec<VisibleRobot>) {
         self.visible_others = visible_robots.to_owned().to_vec();
+    }
+
+    pub fn update_visible_valuables(&mut self, visible_valuables: &Vec<VisibleValuable>) {
+        self.visible_valuables = visible_valuables.to_owned().to_vec();
     }
 
     /// Get a map of coords to full gridcells that this robot knows about
