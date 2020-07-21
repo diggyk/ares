@@ -9,7 +9,7 @@ pub struct Collect {}
 impl Process for Collect {
     /// Main run of the Neutral process
     fn run(
-        _: &PgConnection,
+        conn: &PgConnection,
         robot: &mut Robot,
         previous_result: Option<ProcessResult>,
     ) -> ProcessResult {
@@ -29,7 +29,14 @@ impl Process for Collect {
 
         // mine it
         // try to get the minable amount from the valuable
-        mined += CollectorModule::get_collection_rate(robot.modules.m_collector.as_str());
+        let mine = CollectorModule::get_collection_rate(robot.modules.m_collector.as_str());
+
+        let grid = robot.grid.lock().unwrap();
+        let valuable = grid.get_valuable_by_loc(&Coords {
+            q: robot.data.q,
+            r: robot.data.r,
+        });
+        let mined = valuable.mine(conn, mine);
 
         // if we've mined enough or if we are at capacity, transition to Neutral
         if mined > max_to_mine {

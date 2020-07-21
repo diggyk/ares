@@ -67,4 +67,36 @@ impl Valuable {
 
         _valuables
     }
+
+    /// Attempt to mine a certain amount
+    pub fn mine(&mut self, conn: &PgConnection, amount: i32) -> i32 {
+        let mut mined_amount: i32 = 0;
+
+        if self.amount < amount {
+            mined_amount = self.amount;
+            self.amount = 0;
+        } else {
+            mined_amount = amount;
+            self.amount -= mined_amount;
+        }
+
+        // update the db
+        let _ = diesel::update(valuables::table.filter(valuables::id.eq(self.id)))
+            .set(valuables::amount.eq(self.amount))
+            .execute(conn);
+
+        println!(
+            "Valuable {}: mined {} ({} left)",
+            self.id, mined_amount, self.amount
+        );
+        mined_amount
+    }
+
+    /// Delete self
+    pub fn destroy(&mut self, conn: &PgConnection) -> bool {
+        println!("Valuable {}: Destroy", self.id);
+        let _ = diesel::delete(valuables::table.filter(valuables::id.eq(self.id))).execute(conn);
+
+        true
+    }
 }
