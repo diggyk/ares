@@ -28,7 +28,7 @@ pub enum ProcessResult {
     /// Request something from the server
     ServerRequest(Request),
     /// Transition to collect
-    TransitionToCollect(i32),
+    TransitionToCollect,
     /// Transition back to the neutral mode
     TransitionToNeutral,
     /// Indicate a switch to Move; the last bool means to spin 180 at the end

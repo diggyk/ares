@@ -5,7 +5,6 @@ use super::*;
 use crate::grid::utils::traversal::is_reachable;
 use crate::grid::*;
 use crate::robot::*;
-use crate::server::*;
 
 /// Holds information about robots visible from the last scan
 #[derive(Clone, Debug, PartialEq)]
@@ -82,11 +81,13 @@ impl Process for Scan {
                 });
 
                 // also see if there is a robot in that cell
-                let other_robot = grid.get_robot_by_loc(&Coords {
+                let other_robot = grid.get_robot_id_by_loc(&Coords {
                     q: cell.q,
                     r: cell.r,
                 });
-                if other_robot.is_some() {
+
+                // if there is a robot on that cell (and it isn't this robot)...
+                if other_robot.is_some() && *other_robot.unwrap() != robot.data.id {
                     visible_robots.push(VisibleRobot {
                         robot_id: *other_robot.unwrap(),
                         coords: Coords {
@@ -97,7 +98,7 @@ impl Process for Scan {
                 }
 
                 // and then see if there are valuables in that cell
-                let valuable = grid.get_valuable_by_loc(&Coords {
+                let valuable = grid.get_valuable_id_by_loc(&Coords {
                     q: cell.q,
                     r: cell.r,
                 });

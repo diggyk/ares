@@ -4,7 +4,7 @@ use std::io::Read;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime};
 
-use super::ServerConfig;
+use super::*;
 use crate::grid::Coords;
 use crate::grid::Dir;
 use crate::grid::Grid;
@@ -123,11 +123,104 @@ impl Server {
         self.valuables.insert(valuable.id, valuable);
     }
 
+    /// Check all the valuables; if they are now exhausted, tell them
+    /// to destroy themselves and remove references to them in Server and Grid
+    fn destroy_depleted_valuables(&mut self) {
+        // see if the valuables have been exhausted and delete them
+        let mut deleted_valuables: Vec<(Coords, i64)> = Vec::new();
+        for (id, valuable) in &mut self.valuables {
+            if valuable.amount == 0 {
+                if valuable.destroy(&self.config.conn) == true {
+                    deleted_valuables.push((
+                        Coords {
+                            q: valuable.q,
+                            r: valuable.r,
+                        },
+                        *id,
+                    ));
+                }
+            }
+        }
+
+        // delete any destroyed/depleted valubles from
+        // our local tracking and the grid
+        for valuable in deleted_valuables {
+            self.grid
+                .lock()
+                .unwrap()
+                .remove_valuable_by_loc(&valuable.0);
+            self.valuables.remove(&valuable.1);
+        }
+    }
+
     fn _wait_for_enter(&self) -> std::io::Result<()> {
         println!("Paused (press enter)...");
         let mut buffer = String::new();
         std::io::stdin().read_to_string(&mut buffer)?;
         Ok(())
+    }
+
+    /// Mine a valuable specified by id for a given amount
+    /// Return the amount mined in a server response
+    fn mine_for_robot(
+        &mut self,
+        robot_id: &i64,
+        valuable_id: i64,
+        amount: i32,
+    ) -> Option<Response> {
+        let valuable = self.valuables.get_mut(&valuable_id);
+
+        if valuable.is_none() {
+            return Some(Response::Fail);
+        }
+
+        let mined_amount = valuable.unwrap().mine(&self.config.conn, amount);
+
+        Some(Response::Mined {
+            valuable_id,
+            amount: mined_amount,
+        })
+    }
+
+    /// When we tick a robot, it may ask the server to do something
+    /// This is usually because robots do not have direct access to other
+    /// robots or valuables.  So it must ask the server to do things like
+    /// mining or shooting at others
+    fn handle_request_for_robot(&mut self, robot_id: &i64, request: Request) -> Option<Response> {
+        match request {
+            Request::Mine {
+                valuable_id,
+                amount,
+            } => self.mine_for_robot(robot_id, valuable_id, amount),
+            _ => None,
+        }
+    }
+
+    fn tick_robot(&mut self, robot_id: &i64) {
+        // the robot may send back a request for this server to perform
+        let robot = self.robots.get_mut(robot_id);
+
+        if robot.is_none() {
+            return ();
+        }
+
+        let _robot = robot.unwrap();
+
+        let server_request = _robot.tick(&self.config.conn);
+
+        let server_request = if server_request.is_some() {
+            server_request.unwrap()
+        } else {
+            return ();
+        };
+
+        let server_response = self.handle_request_for_robot(robot_id, server_request);
+        if server_response.is_some() {
+            let robot = self.robots.get_mut(robot_id);
+            robot
+                .unwrap()
+                .handle_server_response(Some(&self.config.conn), server_response.unwrap());
+        }
     }
 
     /// The main run loop for the ARES server.  Spawns robots if needed; tick all the robot
@@ -142,23 +235,15 @@ impl Server {
                 self.spawn_valuable();
             }
 
-            for (_, robot) in &mut self.robots {
-                robot.ident();
-                robot.tick(&self.config.conn);
+            // because we need the server `self` to be mutable, we cannot borrow
+            // anything else to send along, otherwise, we get hit by the borrower
+            // check.  So, let's make copies of the robot ids and use that
+            let robot_ids: Vec<i64> = self.robots.keys().map(|k| k.clone()).collect();
+            for id in robot_ids {
+                self.tick_robot(&id);
             }
 
-            // see if the valuables have been exhausted and delete them
-            let mut deleted_valuables: Vec<i64> = Vec::new();
-            for (id, valuable) in &mut self.valuables {
-                if valuable.amount == 0 {
-                    if valuable.destroy(&self.config.conn) == true {
-                        deleted_valuables.push(*id);
-                    }
-                }
-            }
-            for id in deleted_valuables {
-                self.valuables.remove(&id);
-            }
+            self.destroy_depleted_valuables();
 
             // Wait for remainer of the tick time
             if let Ok(elapse) = last_tick.elapsed() {

@@ -105,5 +105,6 @@ pub enum Request {
 /// For each server request, the server can respond to the robot
 #[derive(Clone, Debug, PartialEq)]
 pub enum Response {
+    Fail,
     Mined { valuable_id: i64, amount: i32 },
 }

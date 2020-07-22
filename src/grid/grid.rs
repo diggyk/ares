@@ -253,13 +253,18 @@ impl Grid {
     }
 
     /// Get a robot id based on a location
-    pub fn get_robot_by_loc(&self, coords: &Coords) -> Option<&i64> {
+    pub fn get_robot_id_by_loc(&self, coords: &Coords) -> Option<&i64> {
         self.robot_locs.get(coords)
     }
 
     /// Get a valuable id based on a location
-    pub fn get_valuable_by_loc(&self, coords: &Coords) -> Option<&i64> {
+    pub fn get_valuable_id_by_loc(&self, coords: &Coords) -> Option<&i64> {
         self.valuables_locs.get(coords)
+    }
+
+    /// remove a valuable given a location
+    pub fn remove_valuable_by_loc(&mut self, coords: &Coords) {
+        self.valuables_locs.remove(coords);
     }
 }
 

@@ -35,6 +35,7 @@ pub struct RobotData {
     pub max_power: i32,
     pub recharge_rate: i32,
     pub mined_amount: i32,
+    pub val_inventory: i32,
 }
 
 /// Represents a grid cell that is known by a robot
@@ -239,6 +240,7 @@ impl Robot {
                 max_power: 0,
                 recharge_rate: 0,
                 mined_amount: 0,
+                val_inventory: 0,
             }
         }
 
@@ -508,6 +510,59 @@ impl Robot {
         ProcessResult::Ok
     }
 
+    /// what we do when we need to start a new mining operation
+    pub fn start_new_mining_operation(&mut self, conn: Option<&PgConnection>) {
+        self.data.mined_amount = 0;
+
+        if conn.is_none() {
+            return ();
+        }
+
+        let conn = conn.unwrap();
+
+        let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
+            .set(robots::mined_amount.eq(0))
+            .execute(conn);
+    }
+
+    /// Called as part of a server response when we have successfully mined a valuable
+    pub fn successfully_mined(&mut self, conn: Option<&PgConnection>, amount: i32) {
+        self.data.mined_amount += amount;
+        self.data.val_inventory += amount;
+
+        if conn.is_none() {
+            return ();
+        }
+
+        let conn = conn.unwrap();
+
+        let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
+            .set((
+                robots::mined_amount.eq(self.data.mined_amount),
+                robots::val_inventory.eq(self.data.val_inventory),
+            ))
+            .execute(conn);
+    }
+
+    /// Handles a response back from the server.  This happens when we send a
+    /// request to the server to do things like mining a valuable or attacking
+    /// another robot
+    pub fn handle_server_response(&mut self, conn: Option<&PgConnection>, response: Response) {
+        match response {
+            // if we failed something, we should go back to the neutral position
+            Response::Fail => {
+                Neutral::init(conn.unwrap(), self, None);
+                self.active_process = Some(Processes::Neutral);
+            }
+            Response::Mined {
+                valuable_id: _,
+                amount,
+            } => {
+                self.successfully_mined(conn, amount);
+            }
+        }
+    }
+
     /// Handles a tick
     pub fn tick(&mut self, conn: &PgConnection) -> Option<Request> {
         self.ident();
@@ -527,7 +582,7 @@ impl Robot {
         // If we are transitioning, initialize it
         // If we are collecting, see if we have mined the max amount
         match result {
-            Some(ProcessResult::TransitionToCollect { .. }) => {
+            Some(ProcessResult::TransitionToCollect) => {
                 if Collect::init(conn, self, result) == ProcessResult::Ok {
                     self.active_process = Some(Processes::Collect);
                 }
@@ -540,6 +595,9 @@ impl Robot {
             Some(ProcessResult::TransitionToNeutral) => {
                 Neutral::init(conn, self, result);
                 self.active_process = Some(Processes::Neutral);
+            }
+            Some(ProcessResult::ServerRequest(request)) => {
+                return Some(request);
             }
             _ => {}
         }

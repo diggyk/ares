@@ -31,7 +31,13 @@ impl Process for Neutral {
 
         // TODO: If Others, switch to Fight or Flight
 
-        // TODO: If on valuables, switch to Collect
+        // filter out valuables that have a robot sitting on them
+        let _visible_valuables: Vec<&VisibleValuable> = _visible_valuables
+            .iter()
+            .filter(|v| !_visible_robots.iter().any(|r| r.coords == v.coords))
+            .collect();
+
+        // If on valuables, switch to Collect
         if _visible_valuables.len() > 0 {
             let closest_coords = Neutral::find_closest_coords(
                 &Coords {
@@ -43,17 +49,14 @@ impl Process for Neutral {
 
             if closest_coords.is_some() {
                 let closest_coords = closest_coords.unwrap();
-
                 if closest_coords == robot_coords {
-                    let max_to_mine =
-                        CollectorModule::get_collection_max(robot.modules.m_collector.as_str());
-                    return ProcessResult::TransitionToCollect(max_to_mine);
+                    return ProcessResult::TransitionToCollect;
                 }
 
+                // If spotted, Valuables, switch to Move
                 return ProcessResult::TransitionToMove(closest_coords, Dir::get_random(), false);
             }
         }
-        // TODO: If spotted, Valuables, switch to Move
 
         // TODO: Time to exfiltrate?
 
