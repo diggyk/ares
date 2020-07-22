@@ -10,6 +10,6 @@ impl CollectorModule {
     }
 
     pub fn get_collection_max(_name: &str) -> i32 {
-        100
+        200
     }
 }

@@ -56,7 +56,7 @@ fn add_rooms(cells: &mut HashMap<Coords, GridCell>, size: i32) {
 
     for _ in 0..num_rooms {
         let size = if size > 2 {
-            rng.gen_range(1, max_size)
+            rng.gen_range(1, max_size + 1)
         } else {
             size
         };

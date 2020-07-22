@@ -13,7 +13,13 @@ pub struct Neutral {}
 impl Process for Neutral {
     /// Main run of the Neutral process
     fn run(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
-        // println!("Neutral: run");
+        // see if it is time to exfiltrate
+        let max_val_inventory =
+            CollectorModule::get_collection_max(robot.modules.m_collector.as_str());
+        if robot.data.val_inventory >= max_val_inventory {
+            return ProcessResult::TransitionToExfiltrate;
+        }
+
         let robot_coords = Coords {
             q: robot.data.q,
             r: robot.data.r,
@@ -57,8 +63,6 @@ impl Process for Neutral {
                 return ProcessResult::TransitionToMove(closest_coords, Dir::get_random(), false);
             }
         }
-
-        // TODO: Time to exfiltrate?
 
         // TODO: Switch to hibernate?
 

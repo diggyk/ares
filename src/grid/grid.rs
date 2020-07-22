@@ -257,6 +257,46 @@ impl Grid {
         self.robot_locs.get(coords)
     }
 
+    /// Get the coords of a robot by id
+    pub fn get_coords_by_robot_id(&self, id: &i64) -> Option<&Coords> {
+        let mut coords: Option<&Coords> = None;
+        for coord in self.robot_locs.keys() {
+            let _id = self.robot_locs.get(coord);
+            if _id.is_none() {
+                continue;
+            }
+
+            if _id.unwrap() == id {
+                coords = Some(coord);
+            }
+        }
+
+        coords
+    }
+
+    /// Remove a robot
+    pub fn remove_robot_by_loc(&mut self, coords: &Coords) {
+        self.robot_locs.remove(coords);
+    }
+
+    /// Remove a robot by id
+    pub fn remove_robot_by_id(&mut self, id: &i64) {
+        let coords = self.get_coords_by_robot_id(id);
+
+        let mut _coords: Option<Coords> = None;
+        if coords.is_some() {
+            let __coords = coords.unwrap();
+            _coords = Some(Coords {
+                q: __coords.q,
+                r: __coords.r,
+            });
+        } else {
+            return ();
+        }
+
+        self.remove_robot_by_loc(&_coords.unwrap());
+    }
+
     /// Get a valuable id based on a location
     pub fn get_valuable_id_by_loc(&self, coords: &Coords) -> Option<&i64> {
         self.valuables_locs.get(coords)

@@ -1,11 +1,13 @@
 use diesel::PgConnection;
 
 mod collect;
+mod exfil;
 mod moveproc;
 mod neutral;
 mod scan;
 
 pub use collect::*;
+pub use exfil::*;
 pub use moveproc::*;
 pub use neutral::*;
 pub use scan::*;
@@ -29,6 +31,8 @@ pub enum ProcessResult {
     ServerRequest(Request),
     /// Transition to collect
     TransitionToCollect,
+    /// Transition to Exfiltration
+    TransitionToExfiltrate,
     /// Transition back to the neutral mode
     TransitionToNeutral,
     /// Indicate a switch to Move; the last bool means to spin 180 at the end
@@ -39,6 +43,7 @@ pub enum ProcessResult {
 #[derive(Debug)]
 pub enum Processes {
     Collect,
+    Exfil,
     Move,
     Neutral,
     Scan,

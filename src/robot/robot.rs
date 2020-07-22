@@ -36,6 +36,7 @@ pub struct RobotData {
     pub recharge_rate: i32,
     pub mined_amount: i32,
     pub val_inventory: i32,
+    pub exfil_countdown: i32,
 }
 
 /// Represents a grid cell that is known by a robot
@@ -241,6 +242,7 @@ impl Robot {
                 recharge_rate: 0,
                 mined_amount: 0,
                 val_inventory: 0,
+                exfil_countdown: -1,
             }
         }
 
@@ -282,10 +284,10 @@ impl Robot {
 
     /// print id and status text
     pub fn ident(&self) {
-        println!(
-            "Robot {}: ({},{}) @ {:?}",
-            self.data.id, self.data.q, self.data.r, self.data.orientation
-        );
+        // println!(
+        //     "Robot {}: ({},{}) @ {:?}",
+        //     self.data.id, self.data.q, self.data.r, self.data.orientation
+        // );
     }
 
     /// Update the orientation on turn left
@@ -527,6 +529,10 @@ impl Robot {
 
     /// Called as part of a server response when we have successfully mined a valuable
     pub fn successfully_mined(&mut self, conn: Option<&PgConnection>, amount: i32) {
+        println!(
+            "Robot {}: mined {}; total {}",
+            self.data.id, amount, self.data.val_inventory
+        );
         self.data.mined_amount += amount;
         self.data.val_inventory += amount;
 
@@ -542,6 +548,47 @@ impl Robot {
                 robots::val_inventory.eq(self.data.val_inventory),
             ))
             .execute(conn);
+    }
+
+    fn set_exfil_countdown(&mut self, conn: Option<&PgConnection>, value: i32) {
+        self.data.exfil_countdown = value;
+
+        if conn.is_none() {
+            return ();
+        }
+
+        let conn = conn.unwrap();
+
+        let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
+            .set(robots::exfil_countdown.eq(self.data.exfil_countdown))
+            .execute(conn);
+    }
+
+    /// start the exfil countdown
+    pub fn start_exfil_countdown(&mut self, conn: Option<&PgConnection>) {
+        let value = exfilbeacon::ExfilBeaconModule::get_delay(self.modules.m_exfilbeacon.as_str());
+        self.set_exfil_countdown(conn, value);
+    }
+
+    /// reset the exfil countdown
+    pub fn reset_exfil_countdown(&mut self, conn: Option<&PgConnection>) {
+        let value = -1;
+        self.set_exfil_countdown(conn, value);
+    }
+
+    /// decrement the exfil countdown
+    pub fn tick_exfil_countdown(&mut self, conn: Option<&PgConnection>) {
+        let value = self.data.exfil_countdown - 1;
+        self.set_exfil_countdown(conn, value);
+    }
+
+    /// Delete self
+    pub fn destroy(&mut self, conn: Option<&PgConnection>) {
+        println!("Robot {}: Destroy", self.data.id);
+        if conn.is_some() {
+            let _ = diesel::delete(robots::table.filter(robots::id.eq(self.data.id)))
+                .execute(conn.unwrap());
+        }
     }
 
     /// Handles a response back from the server.  This happens when we send a
@@ -574,6 +621,7 @@ impl Robot {
         let process = self.active_process.as_ref().unwrap().clone();
         let result = match process {
             Processes::Collect => Some(Collect::run(conn, self, None)),
+            Processes::Exfil => Some(Exfil::run(conn, self, None)),
             Processes::Move => Some(Move::run(conn, self, None)),
             Processes::Neutral => Some(Neutral::run(conn, self, None)),
             Processes::Scan => Some(ProcessResult::Ok),
@@ -585,6 +633,11 @@ impl Robot {
             Some(ProcessResult::TransitionToCollect) => {
                 if Collect::init(conn, self, result) == ProcessResult::Ok {
                     self.active_process = Some(Processes::Collect);
+                }
+            }
+            Some(ProcessResult::TransitionToExfiltrate) => {
+                if Exfil::init(conn, self, result) == ProcessResult::Ok {
+                    self.active_process = Some(Processes::Exfil);
                 }
             }
             Some(ProcessResult::TransitionToMove { .. }) => {

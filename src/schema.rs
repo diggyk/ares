@@ -50,6 +50,7 @@ table! {
         recharge_rate -> Int4,
         mined_amount -> Int4,
         val_inventory -> Int4,
+        exfil_countdown -> Int4,
     }
 }
 

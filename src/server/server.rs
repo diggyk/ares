@@ -115,7 +115,7 @@ impl Server {
         let mut grid = self.grid.lock().expect("Could not get lock on grid");
         let coords = grid.get_random_open_cell();
         let mut rng = rand::thread_rng();
-        let amount: i32 = rng.gen_range(100, 200);
+        let amount: i32 = rng.gen_range(50, 600);
 
         let valuable = Valuable::new(coords.clone(), amount, Some(&self.config.conn));
 
@@ -171,6 +171,7 @@ impl Server {
         let valuable = self.valuables.get_mut(&valuable_id);
 
         if valuable.is_none() {
+            println!("Valuable is non-existant");
             return Some(Response::Fail);
         }
 
@@ -182,12 +183,23 @@ impl Server {
         })
     }
 
+    fn exfiltrate_robot(&mut self, robot_id: &i64) -> Option<Response> {
+        println!("Server exfil of robot {}", robot_id);
+        let mut grid = self.grid.lock().unwrap();
+        grid.remove_robot_by_id(robot_id);
+
+        self.robots.remove(robot_id);
+
+        None
+    }
+
     /// When we tick a robot, it may ask the server to do something
     /// This is usually because robots do not have direct access to other
     /// robots or valuables.  So it must ask the server to do things like
     /// mining or shooting at others
     fn handle_request_for_robot(&mut self, robot_id: &i64, request: Request) -> Option<Response> {
         match request {
+            Request::Exfiltrate { robot_id } => self.exfiltrate_robot(&robot_id),
             Request::Mine {
                 valuable_id,
                 amount,
