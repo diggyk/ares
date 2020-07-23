@@ -248,6 +248,8 @@ impl Robot {
         }
 
         let modules = RobotModules::new(_robot.id, modules, conn);
+        let max_power = power::PowerModule::get_max_power(modules.m_power.as_str());
+        _robot.power = max_power;
 
         let mut robot = Robot {
             grid,
@@ -271,14 +273,50 @@ impl Robot {
         let recharge_rate = power::PowerModule::get_recharge_rate(self.modules.m_power.as_str());
 
         self.data.max_power = max_power;
+        self.data.power = max_power;
         self.data.recharge_rate = recharge_rate;
 
         if let Some(conn) = conn {
             let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
                 .set((
                     robots::max_power.eq(max_power),
-                    robots::recharge_rate.eq(max_power),
+                    robots::recharge_rate.eq(recharge_rate),
+                    robots::power.eq(max_power),
                 ))
+                .execute(conn);
+        }
+    }
+
+    /// use power
+    pub fn use_power(&mut self, conn: Option<&PgConnection>, amount: i32) -> ProcessResult {
+        if self.data.power < amount {
+            return ProcessResult::Fail;
+        }
+
+        self.data.power -= amount;
+
+        if let Some(conn) = conn {
+            let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
+                .set(robots::power.eq(self.data.power))
+                .execute(conn);
+        }
+
+        return ProcessResult::Ok;
+    }
+
+    /// recharge power based on the rate
+    pub fn recharge_power(&mut self, conn: Option<&PgConnection>) {
+        let recharge_rate = power::PowerModule::get_recharge_rate(self.modules.m_power.as_str());
+
+        self.data.power += recharge_rate;
+
+        if self.data.power > self.data.max_power {
+            self.data.power = self.data.max_power;
+        }
+
+        if let Some(conn) = conn {
+            let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
+                .set(robots::power.eq(self.data.power))
                 .execute(conn);
         }
     }
@@ -627,6 +665,9 @@ impl Robot {
             Processes::Neutral => Some(Neutral::run(conn, self, None)),
             Processes::Scan => Some(ProcessResult::Ok),
         };
+
+        // recharge batteries
+        self.recharge_power(Some(conn));
 
         // If we are transitioning, initialize it
         // If we are collecting, see if we have mined the max amount

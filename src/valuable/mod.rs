@@ -70,7 +70,7 @@ impl Valuable {
 
     /// Attempt to mine a certain amount
     pub fn mine(&mut self, conn: &PgConnection, amount: i32) -> i32 {
-        let mut mined_amount: i32 = 0;
+        let mined_amount: i32;
 
         if self.amount < amount {
             mined_amount = self.amount;

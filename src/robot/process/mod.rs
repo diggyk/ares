@@ -25,6 +25,8 @@ pub enum ProcessResult {
     Fail,
     /// Result of collecting
     Collected(i32, i32),
+    /// Indicates not enough power for operation
+    OutOfPower,
     /// Result of a scan
     ScannedCells(ScanResults),
     /// Request something from the server

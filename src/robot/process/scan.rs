@@ -38,6 +38,11 @@ impl Process for Scan {
 
         let fov = scanner::ScannerModule::get_fov(&robot.modules.m_scanner);
         let range = scanner::ScannerModule::get_range(&robot.modules.m_scanner);
+        let power_need = scanner::ScannerModule::get_power_usage(&robot.modules.m_power);
+
+        if robot.data.power < power_need {
+            return ProcessResult::OutOfPower;
+        }
 
         let cells = grid.get_cells(&our_coords, robot.data.orientation, fov, range);
         let cells_full: HashMap<Coords, GridCell> = cells

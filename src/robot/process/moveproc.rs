@@ -13,9 +13,13 @@ impl Process for Move {
         // Take the next X moves based on the drive system
         robot.move_robot(conn);
 
-        let mut scanned_cells: Vec<Coords> = Vec::new();
-        if let ProcessResult::ScannedCells(scan_result) = Scan::run(conn, robot, None) {
-            scanned_cells = scan_result.scanned_cells;
+        // we scan only so we can react to other robots
+        let mut _scanned_cells: Vec<Coords> = Vec::new();
+        let scan_results = Scan::run(conn, robot, None);
+        if let ProcessResult::ScannedCells(scan_result) = scan_results {
+            _scanned_cells = scan_result.scanned_cells;
+        } else if scan_results == ProcessResult::OutOfPower {
+            return ProcessResult::OutOfPower;
         }
         // println!("Scanned {} cells", scanned_cells.len());
 

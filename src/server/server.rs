@@ -167,7 +167,7 @@ impl Server {
     /// Return the amount mined in a server response
     fn mine_for_robot(
         &mut self,
-        robot_id: &i64,
+        _robot_id: &i64,
         valuable_id: i64,
         amount: i32,
     ) -> Option<Response> {
@@ -207,7 +207,6 @@ impl Server {
                 valuable_id,
                 amount,
             } => self.mine_for_robot(robot_id, valuable_id, amount),
-            _ => None,
         }
     }
 

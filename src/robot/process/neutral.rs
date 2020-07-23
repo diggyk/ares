@@ -29,10 +29,14 @@ impl Process for Neutral {
         let mut _visible_robots: Vec<VisibleRobot> = Vec::new();
         let mut _visible_valuables: Vec<VisibleValuable> = Vec::new();
 
-        if let ProcessResult::ScannedCells(scan_results) = Scan::run(conn, robot, None) {
+        let scan_results = Scan::run(conn, robot, None);
+
+        if let ProcessResult::ScannedCells(scan_results) = scan_results {
             _scanned_cells = scan_results.scanned_cells;
             _visible_robots = scan_results.visible_robots;
             _visible_valuables = scan_results.visible_valuables;
+        } else if scan_results == ProcessResult::OutOfPower {
+            return ProcessResult::OutOfPower;
         }
 
         // TODO: If Others, switch to Fight or Flight
