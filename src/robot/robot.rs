@@ -134,6 +134,7 @@ impl RobotModules {
                     "m_exfilbeacon" => modules.m_exfilbeacon = val.to_string(),
                     "m_hull" => modules.m_hull = val.to_string(),
                     "m_memory" => modules.m_memory = val.to_string(),
+                    "m_power" => modules.m_power = val.to_string(),
                     "m_scanner" => modules.m_scanner = val.to_string(),
                     "m_weapon" => modules.m_weapons = val.to_string(),
                     _ => continue,

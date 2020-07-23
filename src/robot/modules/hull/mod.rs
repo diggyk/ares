@@ -1,7 +1,7 @@
 pub struct HullModule {}
 
 impl HullModule {
-    fn get_max_strength(name: &str) -> i32 {
+    pub fn get_max_strength(_name: &str) -> i32 {
         500
     }
 }

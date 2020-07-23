@@ -1,22 +1,22 @@
 pub struct WeaponModule {}
 
 impl WeaponModule {
-    fn get_range(name: &str) -> i32 {
+    pub fn get_range(_name: &str) -> i32 {
         0
     }
-    fn get_max_damage(name: &str) -> i32 {
-        0
-    }
-
-    fn get_min_damage(name: &str) -> i32 {
+    pub fn get_max_damage(_name: &str) -> i32 {
         0
     }
 
-    fn get_cool_down(name: &str) -> i32 {
+    pub fn get_min_damage(_name: &str) -> i32 {
         0
     }
 
-    fn get_power_usage(name: &str) -> i32 {
+    pub fn get_cool_down(_name: &str) -> i32 {
+        0
+    }
+
+    pub fn get_power_usage(_name: &str) -> i32 {
         0
     }
 }

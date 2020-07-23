@@ -99,6 +99,9 @@ impl Server {
 
         modules.insert("m_memory".to_string(), memory_module.to_string());
 
+        let power_module = power::PowerModule::get_random();
+        modules.insert("m_power".to_string(), power_module.to_string());
+
         let robot = Robot::new(
             coords.clone(),
             orientation,
@@ -267,9 +270,9 @@ impl Server {
                     last_tick = SystemTime::now();
                 }
                 // TODO fix this by addressing the possible overflow
-                std::thread::sleep(Duration::from_secs(1));
+                std::thread::sleep(Duration::from_millis(500));
             } else {
-                std::thread::sleep(Duration::from_secs(1));
+                std::thread::sleep(Duration::from_millis(500));
                 last_tick = SystemTime::now();
             }
 
