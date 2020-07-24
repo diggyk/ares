@@ -8,7 +8,13 @@ pub struct Collect {}
 
 impl Process for Collect {
     /// Main run of the Collect process
-    fn run(_: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
+    fn run(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
+        let power_need = CollectorModule::get_power_usage(&robot.modules.m_power);
+        if robot.data.power < power_need {
+            return ProcessResult::OutOfPower;
+        }
+        robot.use_power(Some(conn), power_need);
+
         let collection_rate =
             CollectorModule::get_collection_rate(robot.modules.m_collector.as_str());
 
@@ -57,6 +63,7 @@ impl Process for Collect {
     // initialize this process
     fn init(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
         println!("Transition to Collect");
+        robot.set_status_text(Some(conn), "I'm mining valuables.");
         robot.start_new_mining_operation(Some(conn));
 
         return ProcessResult::Ok;

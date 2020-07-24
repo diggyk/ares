@@ -24,7 +24,7 @@ impl PowerModule {
         match name {
             "basic" => 150,
             "plus" => 300,
-            "foxline" => 1000,
+            "foxline" => 500,
             _ => 150,
         }
     }

@@ -118,7 +118,7 @@ impl Server {
         let mut grid = self.grid.lock().expect("Could not get lock on grid");
         let coords = grid.get_random_open_cell();
         let mut rng = rand::thread_rng();
-        let amount: i32 = rng.gen_range(50, 600);
+        let amount: i32 = rng.gen_range(50, 5000);
 
         let valuable = Valuable::new(coords.clone(), amount, Some(&self.config.conn));
 

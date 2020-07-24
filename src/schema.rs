@@ -51,6 +51,8 @@ table! {
         mined_amount -> Int4,
         val_inventory -> Int4,
         exfil_countdown -> Int4,
+        hibernate_countdown -> Int4,
+        status_text -> Varchar,
     }
 }
 

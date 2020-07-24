@@ -3,6 +3,7 @@ use diesel::PgConnection;
 use super::ProcessResult;
 use super::*;
 use crate::grid::utils::traversal;
+use crate::robot::*;
 
 pub struct Move {}
 
@@ -10,7 +11,14 @@ pub struct Move {}
 impl Process for Move {
     /// Main run of the Neutral process
     fn run(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
-        // Take the next X moves based on the drive system
+        // make sure we have enough power to run the scanner
+        let power_need = drivesystem::DriveSystemModule::get_power_usage(&robot.modules.m_power);
+        if robot.data.power < power_need {
+            return ProcessResult::OutOfPower;
+        }
+        robot.use_power(Some(conn), power_need);
+
+        // Take the next move based on the drive system
         robot.move_robot(conn);
 
         // we scan only so we can react to other robots
@@ -31,7 +39,11 @@ impl Process for Move {
         }
     }
 
-    fn init(_: &PgConnection, robot: &mut Robot, message: Option<ProcessResult>) -> ProcessResult {
+    fn init(
+        conn: &PgConnection,
+        robot: &mut Robot,
+        message: Option<ProcessResult>,
+    ) -> ProcessResult {
         robot.movement_queue = None;
 
         let robot_coords = Coords {
@@ -58,6 +70,10 @@ impl Process for Move {
                 println!(
                     "Move to {:?}, {:?}, {:?}",
                     &target_coords, &orientation, spin
+                );
+                robot.set_status_text(
+                    Some(conn),
+                    format!("I'm moving to {},{}.", tc.q, tc.r).as_str(),
                 );
             }
             _ => return ProcessResult::Fail,

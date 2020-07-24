@@ -76,8 +76,9 @@ impl Process for Neutral {
     }
 
     // initialize this process
-    fn init(_: &PgConnection, _: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
+    fn init(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
         println!("Transition to Neutral");
+        robot.set_status_text(Some(conn), "I'm idle.");
         ProcessResult::Ok
     }
 }

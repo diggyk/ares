@@ -37,6 +37,8 @@ pub struct RobotData {
     pub mined_amount: i32,
     pub val_inventory: i32,
     pub exfil_countdown: i32,
+    pub hibernate_countdown: i32,
+    pub status_text: String,
 }
 
 /// Represents a grid cell that is known by a robot
@@ -244,6 +246,8 @@ impl Robot {
                 mined_amount: 0,
                 val_inventory: 0,
                 exfil_countdown: -1,
+                hibernate_countdown: -1,
+                status_text: String::from("I'm ready to work!"),
             }
         }
 
@@ -265,6 +269,19 @@ impl Robot {
         robot.update_max_power(conn);
 
         robot
+    }
+
+    /// Update the status text
+    pub fn set_status_text(&mut self, conn: Option<&PgConnection>, status: &str) {
+        self.data.status_text = status.to_string();
+
+        if conn.is_none() {
+            return;
+        }
+
+        let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
+            .set(robots::status_text.eq(status))
+            .execute(conn.unwrap());
     }
 
     /// update the max power based on the power module
