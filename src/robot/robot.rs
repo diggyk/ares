@@ -39,6 +39,8 @@ pub struct RobotData {
     pub exfil_countdown: i32,
     pub hibernate_countdown: i32,
     pub status_text: String,
+    pub hull_strength: i32,
+    pub max_hull_strength: i32,
 }
 
 /// Represents a grid cell that is known by a robot
@@ -248,12 +250,12 @@ impl Robot {
                 exfil_countdown: -1,
                 hibernate_countdown: -1,
                 status_text: String::from("I'm ready to work!"),
+                hull_strength: 0,
+                max_hull_strength: 0,
             }
         }
 
         let modules = RobotModules::new(_robot.id, modules, conn);
-        let max_power = power::PowerModule::get_max_power(modules.m_power.as_str());
-        _robot.power = max_power;
 
         let mut robot = Robot {
             grid,
@@ -267,6 +269,7 @@ impl Robot {
         };
 
         robot.update_max_power(conn);
+        robot.update_max_hull_strength(conn);
 
         robot
     }
@@ -282,6 +285,34 @@ impl Robot {
         let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
             .set(robots::status_text.eq(status))
             .execute(conn.unwrap());
+    }
+
+    /// Set the hull values to max
+    pub fn update_max_hull_strength(&mut self, conn: Option<&PgConnection>) {
+        let hull_strength = hull::HullModule::get_max_strength(self.modules.m_hull.as_str());
+
+        self.data.hull_strength = hull_strength;
+        self.data.max_hull_strength = hull_strength;
+
+        if let Some(conn) = conn {
+            let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
+                .set((
+                    robots::hull_strength.eq(self.data.hull_strength),
+                    robots::max_hull_strength.eq(self.data.max_hull_strength),
+                ))
+                .execute(conn);
+        }
+    }
+
+    /// Update the hull strength
+    pub fn update_hull_strength(&mut self, conn: Option<&PgConnection>, adjustment: i32) {
+        self.data.hull_strength += adjustment;
+
+        if let Some(conn) = conn {
+            let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
+                .set(robots::hull_strength.eq(self.data.hull_strength))
+                .execute(conn);
+        }
     }
 
     /// update the max power based on the power module

@@ -53,6 +53,8 @@ table! {
         exfil_countdown -> Int4,
         hibernate_countdown -> Int4,
         status_text -> Varchar,
+        hull_strength -> Int4,
+        max_hull_strength -> Int4,
     }
 }
 
