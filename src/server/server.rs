@@ -108,6 +108,9 @@ impl Server {
         }
         modules.insert("m_power".to_string(), power_module.to_string());
 
+        let weapon_module = weapon::WeaponModule::get_random();
+        modules.insert("m_weapon".to_string(), weapon_module.to_string());
+
         let robot = Robot::new(
             coords.clone(),
             orientation,
