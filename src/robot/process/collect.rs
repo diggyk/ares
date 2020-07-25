@@ -9,7 +9,7 @@ pub struct Collect {}
 impl Process for Collect {
     /// Main run of the Collect process
     fn run(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
-        let power_need = CollectorModule::get_power_usage(&robot.modules.m_power);
+        let power_need = CollectorModule::get_power_usage(&robot.modules.m_collector);
         if robot.data.power < power_need {
             return ProcessResult::OutOfPower;
         }

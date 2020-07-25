@@ -99,7 +99,13 @@ impl Server {
 
         modules.insert("m_memory".to_string(), memory_module.to_string());
 
-        let power_module = power::PowerModule::get_random();
+        let collector_module = collector::CollectorModule::get_random();
+        modules.insert("m_collector".to_string(), collector_module.to_string());
+
+        let mut power_module = power::PowerModule::get_random();
+        if collector_module == "ultratech" && power_module == "basic" {
+            power_module = "plus".to_string();
+        }
         modules.insert("m_power".to_string(), power_module.to_string());
 
         let robot = Robot::new(
