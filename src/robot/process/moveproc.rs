@@ -68,8 +68,8 @@ impl Process for Move {
                 orientation = o;
                 spin = s;
                 println!(
-                    "Move to {:?}, {:?}, {:?}",
-                    &target_coords, &orientation, spin
+                    "Robot {}: Move to {:?}, {:?}, {:?}",
+                    robot.data.id, &target_coords, &orientation, spin
                 );
                 robot.set_status_text(
                     Some(conn),

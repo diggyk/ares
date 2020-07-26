@@ -497,7 +497,7 @@ impl Robot {
 
     /// Get a map of coords to full gridcells that this robot knows about
     /// and isn't occupied by a known other robot
-    pub fn get_known_traversable_cells(&self) -> HashMap<Coords, GridCell> {
+    pub fn get_known_unoccupied_cells(&self) -> HashMap<Coords, GridCell> {
         let grid = self.grid.lock().unwrap();
         let mut known_cells_full: HashMap<Coords, GridCell> = HashMap::new();
         // convert the RobotKnownCell into full gridcells of the known cells

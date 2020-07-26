@@ -168,8 +168,8 @@ pub fn path_to_moves(start: CoordsAndDir, path: &Vec<&FromStep>) -> Result<Vec<M
 }
 
 // Given a target coordinate, find a path there using only known cells by this robot
-pub fn find_path(robot: &mut Robot, target_coords: Coords) -> Result<Vec<MoveStep>, String> {
-    let known_cells_full = robot.get_known_traversable_cells();
+pub fn find_path(robot: &Robot, target_coords: Coords) -> Result<Vec<MoveStep>, String> {
+    let known_cells_full = robot.get_known_unoccupied_cells();
     let starting_coords = Coords {
         q: robot.data.q,
         r: robot.data.r,

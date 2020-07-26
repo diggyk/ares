@@ -47,16 +47,14 @@ impl Process for Neutral {
             .filter(|v| !_visible_robots.iter().any(|r| r.coords == v.coords))
             .collect();
 
-        // If on valuables, switch to Collect
         if _visible_valuables.len() > 0 {
-            let closest_coords = Neutral::find_closest_coords(
-                &Coords {
-                    q: robot.data.q,
-                    r: robot.data.r,
-                },
+            // find the closest reachable valuables
+            let closest_coords = Neutral::find_closest_reachable_coords(
+                robot,
                 _visible_valuables.iter().map(|v| v.coords).collect(),
             );
 
+            // If on valuables, switch to Collect
             if closest_coords.is_some() {
                 let closest_coords = closest_coords.unwrap();
                 if closest_coords == robot_coords {
@@ -77,7 +75,7 @@ impl Process for Neutral {
 
     // initialize this process
     fn init(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
-        println!("Transition to Neutral");
+        println!("Robot {}: Transition to Neutral", robot.data.id);
         robot.set_status_text(Some(conn), "I'm idle.");
         ProcessResult::Ok
     }
@@ -90,10 +88,17 @@ impl Neutral {
         return Neutral::goto_random_unexplored_cell(robot);
     }
 
-    fn find_closest_coords(coords: &Coords, locs: Vec<Coords>) -> Option<Coords> {
+    fn find_closest_reachable_coords(robot: &Robot, locs: Vec<Coords>) -> Option<Coords> {
+        let coords = Coords {
+            q: robot.data.q,
+            r: robot.data.r,
+        };
         let mut closest: Option<Coords> = None;
         let mut shortest_distance = 100;
         for coord in locs {
+            if traversal::find_path(robot, coord).is_err() {
+                continue;
+            }
             let distance = coords.distance_to(&coord);
             if distance < shortest_distance {
                 closest = Some(coord);
@@ -118,9 +123,14 @@ impl Neutral {
         search_order.shuffle(&mut rng);
 
         // make a list of all the coordinates we know about
-        let known_cells = robot.get_known_traversable_cells();
+        let known_cells = robot.get_known_unoccupied_cells();
         let mut known_coords: Vec<Coords> = Vec::new();
         for (coords, _) in &known_cells {
+            let path = traversal::find_path(robot, coords.clone());
+            if path.is_err() {
+                continue;
+            }
+
             if traversal::is_reachable(&robot_coords, &coords, &known_cells, 100) {
                 known_coords.push(*coords);
             }
@@ -142,6 +152,7 @@ impl Neutral {
                 if cell.unwrap().get_side(*orientation) != EdgeType::Wall {
                     let test_coords = cell_coords.to(orientation, 1);
                     if !known_coords.contains(&test_coords)
+                        && !robot.known_occupied_coords(&cell_coords)
                         && !robot.known_occupied_coords(&test_coords)
                     {
                         if random_pick.is_none() {
