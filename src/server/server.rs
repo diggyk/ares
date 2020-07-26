@@ -119,6 +119,10 @@ impl Server {
             Some(modules),
         );
         grid.robot_locs.insert(coords.clone(), robot.data.id);
+        grid.robot_strengths.insert(
+            robot.data.id,
+            weapon::WeaponModule::get_max_damage(&weapon_module),
+        );
         self.robots.insert(robot.data.id, robot);
     }
 

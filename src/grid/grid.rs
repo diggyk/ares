@@ -94,6 +94,7 @@ impl GridCell {
 pub struct Grid {
     pub cells: HashMap<Coords, GridCell>,
     pub robot_locs: HashMap<Coords, i64>,
+    pub robot_strengths: HashMap<i64, i32>,
     pub valuables_locs: HashMap<Coords, i64>,
     less_than_guess: Option<i32>,
 }
@@ -118,6 +119,7 @@ impl Grid {
         Ok(Grid {
             cells: cells_map,
             robot_locs: HashMap::new(),
+            robot_strengths: HashMap::new(),
             valuables_locs: HashMap::new(),
             less_than_guess: Some(4000),
         })
@@ -165,6 +167,7 @@ impl Grid {
         Ok(Grid {
             cells: cells,
             robot_locs: HashMap::new(),
+            robot_strengths: HashMap::new(),
             valuables_locs: HashMap::new(),
             less_than_guess: Some(5000),
         })
@@ -281,6 +284,7 @@ impl Grid {
 
     /// Remove a robot by id
     pub fn remove_robot_by_id(&mut self, id: &i64) {
+        self.robot_strengths.remove(id);
         let coords = self.get_coords_by_robot_id(id);
 
         let mut _coords: Option<Coords> = None;

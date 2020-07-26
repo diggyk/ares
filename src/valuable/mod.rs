@@ -85,10 +85,6 @@ impl Valuable {
             .set(valuables::amount.eq(self.amount))
             .execute(conn);
 
-        println!(
-            "Valuable {}: mined {} ({} left)",
-            self.id, mined_amount, self.amount
-        );
         mined_amount
     }
 

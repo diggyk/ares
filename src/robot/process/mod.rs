@@ -37,6 +37,8 @@ pub enum ProcessResult {
     TransitionToExfiltrate,
     /// Transition back to the neutral mode
     TransitionToNeutral,
+    /// Indicate a switch to Flee, which is really a switch to Move but we log it
+    TransitionToFlee(Coords, Dir),
     /// Indicate a switch to Move; the last bool means to spin 180 at the end
     TransitionToMove(Coords, Dir, bool),
 }

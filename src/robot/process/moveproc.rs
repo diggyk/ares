@@ -22,15 +22,15 @@ impl Process for Move {
         robot.move_robot(conn);
 
         // we scan only so we can react to other robots
-        let mut _scanned_cells: Vec<Coords> = Vec::new();
+        let mut _visible_robots: Vec<VisibleRobot> = Vec::new();
         let scan_results = Scan::run(conn, robot, None);
         if let ProcessResult::ScannedCells(scan_result) = scan_results {
-            _scanned_cells = scan_result.scanned_cells;
+            _visible_robots = scan_result.visible_robots;
         } else if scan_results == ProcessResult::OutOfPower {
             return ProcessResult::OutOfPower;
         }
-        // println!("Scanned {} cells", scanned_cells.len());
 
+        // if we are not out of moves, switch to neutral
         if robot.movement_queue.is_none() {
             robot.movement_queue = None;
             return ProcessResult::TransitionToNeutral;
@@ -74,6 +74,19 @@ impl Process for Move {
                 robot.set_status_text(
                     Some(conn),
                     format!("I'm moving to {},{}.", tc.q, tc.r).as_str(),
+                );
+            }
+            ProcessResult::TransitionToFlee(tc, o) => {
+                target_coords = tc;
+                orientation = o;
+                spin = true;
+                println!(
+                    "Robot {}: Flee to {:?}, {:?}, {:?}",
+                    robot.data.id, &target_coords, &orientation, spin
+                );
+                robot.set_status_text(
+                    Some(conn),
+                    format!("I'm fleeing to {},{}!", tc.q, tc.r).as_str(),
                 );
             }
             _ => return ProcessResult::Fail,

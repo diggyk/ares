@@ -1,3 +1,4 @@
+use rand::Rng;
 use std::collections::HashMap;
 use std::time::SystemTime;
 
@@ -6,11 +7,19 @@ use crate::grid::utils::traversal::is_reachable;
 use crate::grid::*;
 use crate::robot::*;
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum ThreatLevel {
+    Unknown,
+    Weaker,
+    Stronger,
+}
+
 /// Holds information about robots visible from the last scan
 #[derive(Clone, Debug, PartialEq)]
 pub struct VisibleRobot {
     pub robot_id: i64,
     pub coords: Coords,
+    pub threat_level: ThreatLevel,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -30,6 +39,8 @@ pub struct Scan {}
 
 impl Process for Scan {
     fn run(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
+        let mut rng = rand::thread_rng();
+
         // make sure we have enough power to run the scanner
         let power_need = scanner::ScannerModule::get_power_usage(&robot.modules.m_power);
         if robot.data.power < power_need {
@@ -45,6 +56,8 @@ impl Process for Scan {
 
         let fov = scanner::ScannerModule::get_fov(&robot.modules.m_scanner);
         let range = scanner::ScannerModule::get_range(&robot.modules.m_scanner);
+        let accuracy = scanner::ScannerModule::get_accuracy(&robot.modules.m_scanner);
+        let weapon_strength = weapon::WeaponModule::get_max_damage(&robot.modules.m_weapons);
 
         let cells = grid.get_cells(&our_coords, robot.data.orientation, fov, range);
         let cells_full: HashMap<Coords, GridCell> = cells
@@ -95,12 +108,25 @@ impl Process for Scan {
 
                 // if there is a robot on that cell (and it isn't this robot)...
                 if other_robot.is_some() && *other_robot.unwrap() != robot.data.id {
+                    let other_strength = grid.robot_strengths.get(other_robot.unwrap());
+                    let threat_level: ThreatLevel;
+                    if other_strength.is_none() {
+                        threat_level = ThreatLevel::Unknown;
+                    } else if rng.gen_range(0, 101) > accuracy {
+                        threat_level = ThreatLevel::Unknown;
+                    } else if other_strength.unwrap() > &weapon_strength {
+                        threat_level = ThreatLevel::Stronger;
+                    } else {
+                        threat_level = ThreatLevel::Weaker;
+                    }
+
                     visible_robots.push(VisibleRobot {
                         robot_id: *other_robot.unwrap(),
                         coords: Coords {
                             q: cell.q,
                             r: cell.r,
                         },
+                        threat_level,
                     });
                 }
 

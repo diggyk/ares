@@ -721,6 +721,11 @@ impl Robot {
                     self.active_process = Some(Processes::Exfil);
                 }
             }
+            Some(ProcessResult::TransitionToFlee { .. }) => {
+                if Move::init(conn, self, result) == ProcessResult::Ok {
+                    self.active_process = Some(Processes::Move);
+                }
+            }
             Some(ProcessResult::TransitionToMove { .. }) => {
                 if Move::init(conn, self, result) == ProcessResult::Ok {
                     self.active_process = Some(Processes::Move);

@@ -62,7 +62,7 @@ impl Process for Collect {
 
     // initialize this process
     fn init(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
-        println!("Transition to Collect");
+        println!("Robot {}: Transition to Collect", robot.data.id);
         robot.set_status_text(Some(conn), "I'm mining valuables.");
         robot.start_new_mining_operation(Some(conn));
 

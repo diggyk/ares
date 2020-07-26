@@ -39,7 +39,38 @@ impl Process for Neutral {
             return ProcessResult::OutOfPower;
         }
 
-        // TODO: If Others, switch to Fight or Flight
+        // If we just scanned a robot of stronger or unknown capabilites,
+        // we want to flee
+        let _threats: Vec<&VisibleRobot> = _visible_robots
+            .iter()
+            .filter(|r| r.threat_level != ThreatLevel::Weaker)
+            .collect();
+
+        let closest_threat_coords: Option<Coords> = Neutral::find_closest_coords(
+            robot,
+            _visible_robots.iter().map(|r| r.coords).collect(),
+            false,
+        );
+
+        if closest_threat_coords.is_some() {
+            let flee_coords = Neutral::find_farthest_coords(
+                robot,
+                robot
+                    .get_known_unoccupied_cells()
+                    .keys()
+                    .map(|c| c.clone())
+                    .collect(),
+                true,
+                closest_threat_coords,
+            );
+
+            if flee_coords.is_some() {
+                return ProcessResult::TransitionToFlee(
+                    flee_coords.unwrap(),
+                    robot.data.orientation,
+                );
+            }
+        }
 
         // filter out valuables that have a robot sitting on them
         let _visible_valuables: Vec<&VisibleValuable> = _visible_valuables
@@ -49,9 +80,10 @@ impl Process for Neutral {
 
         if _visible_valuables.len() > 0 {
             // find the closest reachable valuables
-            let closest_coords = Neutral::find_closest_reachable_coords(
+            let closest_coords = Neutral::find_closest_coords(
                 robot,
                 _visible_valuables.iter().map(|v| v.coords).collect(),
+                true,
             );
 
             // If on valuables, switch to Collect
@@ -61,7 +93,6 @@ impl Process for Neutral {
                     return ProcessResult::TransitionToCollect;
                 }
 
-                // If spotted, Valuables, switch to Move
                 return ProcessResult::TransitionToMove(closest_coords, Dir::get_random(), false);
             }
         }
@@ -88,7 +119,10 @@ impl Neutral {
         return Neutral::goto_random_unexplored_cell(robot);
     }
 
-    fn find_closest_reachable_coords(robot: &Robot, locs: Vec<Coords>) -> Option<Coords> {
+    // given a list of coords, pick the one that's closest
+    // If `reachable` is true, we must be able to find a path to the coords based on
+    // what is in memory
+    fn find_closest_coords(robot: &Robot, locs: Vec<Coords>, reachable: bool) -> Option<Coords> {
         let coords = Coords {
             q: robot.data.q,
             r: robot.data.r,
@@ -96,7 +130,44 @@ impl Neutral {
         let mut closest: Option<Coords> = None;
         let mut shortest_distance = 100;
         for coord in locs {
-            if traversal::find_path(robot, coord).is_err() {
+            if reachable && traversal::find_path(robot, coord).is_err() {
+                continue;
+            }
+            let distance = coords.distance_to(&coord);
+            if distance < shortest_distance {
+                closest = Some(coord);
+                shortest_distance = distance;
+            }
+        }
+
+        closest
+    }
+
+    // given a list of coords, pick the one that's closest
+    // If `reachable` is true, we must be able to find a path to the coords based on
+    // what is in memory
+    // If 'origin_coords' is specified, we only use the robot's memory but try to find
+    // the furthest point away from the origin coords instead
+    fn find_farthest_coords(
+        robot: &Robot,
+        locs: Vec<Coords>,
+        reachable: bool,
+        origin_coords: Option<Coords>,
+    ) -> Option<Coords> {
+        let coords: Coords;
+        if origin_coords.is_none() {
+            coords = Coords {
+                q: robot.data.q,
+                r: robot.data.r,
+            };
+        } else {
+            coords = origin_coords.unwrap();
+        }
+
+        let mut closest: Option<Coords> = None;
+        let mut shortest_distance = 100;
+        for coord in locs {
+            if reachable && traversal::find_path(robot, coord).is_err() {
                 continue;
             }
             let distance = coords.distance_to(&coord);
@@ -118,6 +189,7 @@ impl Neutral {
             r: robot.data.r,
         };
 
+        // we will look for open walls in random order
         let mut search_order: Vec<Dir> = Dir::get_vec();
         let mut rng = thread_rng();
         search_order.shuffle(&mut rng);
@@ -127,19 +199,17 @@ impl Neutral {
         let mut known_coords: Vec<Coords> = Vec::new();
         for (coords, _) in &known_cells {
             let path = traversal::find_path(robot, coords.clone());
-            if path.is_err() {
-                continue;
-            }
-
-            if traversal::is_reachable(&robot_coords, &coords, &known_cells, 100) {
+            if path.is_ok() {
                 known_coords.push(*coords);
             }
         }
 
+        // we will search known coords in random order
         known_coords.shuffle(&mut rng);
         let mut random_pick: Option<(&Coords, &Dir)> = None;
         let mut closest: Option<(&Coords, &Dir, i32)> = None;
         let mut farthest: Option<(&Coords, &Dir, i32)> = None;
+
         for cell_coords in &known_coords {
             let grid = robot.grid.lock().unwrap();
             let cell = grid.cells.get(&cell_coords);
@@ -150,7 +220,11 @@ impl Neutral {
             // check the edges in random order; if open, see if we know the cell beyond it
             for orientation in &search_order {
                 if cell.unwrap().get_side(*orientation) != EdgeType::Wall {
+                    // we will test the coords adjacent to the known coords
                     let test_coords = cell_coords.to(orientation, 1);
+
+                    // we will skip testing this if the test coords are also known
+                    // or if we know the coords are occupied by a robot we know about
                     if !known_coords.contains(&test_coords)
                         && !robot.known_occupied_coords(&cell_coords)
                         && !robot.known_occupied_coords(&test_coords)
