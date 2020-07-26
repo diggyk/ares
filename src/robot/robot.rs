@@ -34,13 +34,14 @@ pub struct RobotData {
     pub power: i32,
     pub max_power: i32,
     pub recharge_rate: i32,
+    pub hull_strength: i32,
+    pub max_hull_strength: i32,
     pub mined_amount: i32,
     pub val_inventory: i32,
+    pub max_val_inventory: i32,
     pub exfil_countdown: i32,
     pub hibernate_countdown: i32,
     pub status_text: String,
-    pub hull_strength: i32,
-    pub max_hull_strength: i32,
 }
 
 /// Represents a grid cell that is known by a robot
@@ -245,13 +246,14 @@ impl Robot {
                 power: 0,
                 max_power: 0,
                 recharge_rate: 0,
+                hull_strength: 0,
+                max_hull_strength: 0,
                 mined_amount: 0,
                 val_inventory: 0,
+                max_val_inventory: 0,
                 exfil_countdown: -1,
                 hibernate_countdown: -1,
                 status_text: String::from("I'm ready to work!"),
-                hull_strength: 0,
-                max_hull_strength: 0,
             }
         }
 
@@ -268,8 +270,7 @@ impl Robot {
             modules: modules,
         };
 
-        robot.update_max_power(conn);
-        robot.update_max_hull_strength(conn);
+        robot.set_max_vals(conn);
 
         robot
     }
@@ -287,42 +288,20 @@ impl Robot {
             .execute(conn.unwrap());
     }
 
-    /// Set the hull values to max
-    pub fn update_max_hull_strength(&mut self, conn: Option<&PgConnection>) {
-        let hull_strength = hull::HullModule::get_max_strength(self.modules.m_hull.as_str());
-
-        self.data.hull_strength = hull_strength;
-        self.data.max_hull_strength = hull_strength;
-
-        if let Some(conn) = conn {
-            let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
-                .set((
-                    robots::hull_strength.eq(self.data.hull_strength),
-                    robots::max_hull_strength.eq(self.data.max_hull_strength),
-                ))
-                .execute(conn);
-        }
-    }
-
-    /// Update the hull strength
-    pub fn update_hull_strength(&mut self, conn: Option<&PgConnection>, adjustment: i32) {
-        self.data.hull_strength += adjustment;
-
-        if let Some(conn) = conn {
-            let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
-                .set(robots::hull_strength.eq(self.data.hull_strength))
-                .execute(conn);
-        }
-    }
-
     /// update the max power based on the power module
-    pub fn update_max_power(&mut self, conn: Option<&PgConnection>) {
+    pub fn set_max_vals(&mut self, conn: Option<&PgConnection>) {
         let max_power = power::PowerModule::get_max_power(self.modules.m_power.as_str());
         let recharge_rate = power::PowerModule::get_recharge_rate(self.modules.m_power.as_str());
+        let hull_strength = hull::HullModule::get_max_strength(self.modules.m_hull.as_str());
+        let max_val_inventory =
+            collector::CollectorModule::get_collection_max(self.modules.m_collector.as_str());
 
         self.data.max_power = max_power;
         self.data.power = max_power;
         self.data.recharge_rate = recharge_rate;
+        self.data.hull_strength = hull_strength;
+        self.data.max_hull_strength = hull_strength;
+        self.data.max_val_inventory = max_val_inventory;
 
         if let Some(conn) = conn {
             let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
@@ -330,6 +309,9 @@ impl Robot {
                     robots::max_power.eq(max_power),
                     robots::recharge_rate.eq(recharge_rate),
                     robots::power.eq(max_power),
+                    robots::hull_strength.eq(self.data.hull_strength),
+                    robots::max_hull_strength.eq(self.data.max_hull_strength),
+                    robots::max_val_inventory.eq(self.data.max_val_inventory),
                 ))
                 .execute(conn);
         }
@@ -354,9 +336,7 @@ impl Robot {
 
     /// recharge power based on the rate
     pub fn recharge_power(&mut self, conn: Option<&PgConnection>) {
-        let recharge_rate = power::PowerModule::get_recharge_rate(self.modules.m_power.as_str());
-
-        self.data.power += recharge_rate;
+        self.data.power += self.data.recharge_rate;
 
         if self.data.power > self.data.max_power {
             self.data.power = self.data.max_power;
@@ -365,6 +345,17 @@ impl Robot {
         if let Some(conn) = conn {
             let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
                 .set(robots::power.eq(self.data.power))
+                .execute(conn);
+        }
+    }
+
+    /// Update the hull strength
+    pub fn update_hull_strength(&mut self, conn: Option<&PgConnection>, adjustment: i32) {
+        self.data.hull_strength += adjustment;
+
+        if let Some(conn) = conn {
+            let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
+                .set(robots::hull_strength.eq(self.data.hull_strength))
                 .execute(conn);
         }
     }

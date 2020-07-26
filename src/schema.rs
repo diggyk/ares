@@ -48,13 +48,14 @@ table! {
         power -> Int4,
         max_power -> Int4,
         recharge_rate -> Int4,
+        hull_strength -> Int4,
+        max_hull_strength -> Int4,
         mined_amount -> Int4,
         val_inventory -> Int4,
+        max_val_inventory -> Int4,
         exfil_countdown -> Int4,
         hibernate_countdown -> Int4,
         status_text -> Varchar,
-        hull_strength -> Int4,
-        max_hull_strength -> Int4,
     }
 }
 
