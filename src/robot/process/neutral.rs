@@ -108,7 +108,7 @@ impl Neutral {
         let known_cells = robot.get_known_unoccupied_cells();
         let mut known_coords: Vec<Coords> = Vec::new();
         for (coords, _) in &known_cells {
-            let path = traversal::find_path(robot, coords.clone());
+            let path = traversal::find_path(robot, coords.clone(), false);
             if path.is_ok() {
                 known_coords.push(*coords);
             }

@@ -3,6 +3,7 @@ use diesel::PgConnection;
 use super::process::*;
 use super::robot::Robot;
 use crate::grid::*;
+use crate::robot::modules::weapon::WeaponModule;
 
 impl Robot {
     /// Check to see if we scanned some threats.  If so, transition to flee
@@ -17,11 +18,12 @@ impl Robot {
 
         let closest_threat_coords: Option<Coords> = traversal::find_closest_coords(
             self,
-            self.visible_others.iter().map(|r| r.coords).collect(),
+            _threats.iter().map(|r| r.coords).collect(),
             false,
         );
 
         if closest_threat_coords.is_some() {
+            println!("Robot {}: Threats: {:#?}", self.data.id, _threats);
             let flee_coords = traversal::find_farthest_coords(
                 self,
                 self.get_known_unoccupied_cells()
@@ -59,39 +61,29 @@ impl Robot {
 
         let closest_target_coords: Option<Coords> = traversal::find_closest_coords(
             self,
-            self.visible_others.iter().map(|r| r.coords).collect(),
+            _targets.iter().map(|r| r.coords).collect(),
             false,
         );
 
         if closest_target_coords.is_some() {
-            let pursuit_coords = traversal::find_closest_coords(
-                self,
-                self.get_known_unoccupied_cells()
-                    .keys()
-                    .map(|c| c.clone())
-                    .collect(),
-                true,
-            );
-
-            if pursuit_coords.is_some() {
-                let path_to_coords = traversal::find_path(self, pursuit_coords.unwrap());
-                if path_to_coords.is_err() {
-                    return None;
-                }
-
-                let mut target_id: Option<i64> = None;
-                for target in &self.visible_others {
-                    if target.coords == pursuit_coords.unwrap() {
-                        target_id = Some(target.robot_id);
-                    }
-                }
-
-                self.set_status_text(
-                    conn,
-                    &format!("I'm going to attach Robot {}", target_id.unwrap()),
-                );
-                return Some(ProcessResult::TransitionToPursuit(target_id.unwrap()));
+            println!("Robot {}: Targets: {:#?}", self.data.id, _targets);
+            let path_to_coords = traversal::find_path(self, closest_target_coords.unwrap(), true);
+            if path_to_coords.is_err() {
+                return None;
             }
+
+            let mut target_id: Option<i64> = None;
+            for target in &self.visible_others {
+                if target.coords == closest_target_coords.unwrap() {
+                    target_id = Some(target.robot_id);
+                }
+            }
+
+            self.set_status_text(
+                conn,
+                &format!("I'm going to attack Robot {}", target_id.unwrap()),
+            );
+            return Some(ProcessResult::TransitionToPursue(target_id.unwrap()));
         }
 
         None
@@ -103,11 +95,17 @@ impl Robot {
         // we want to flee
 
         if let Some(response) = self.check_for_threats(conn) {
+            println!("Robot {}: found threats", self.data.id);
             return Some(response);
         }
 
-        if let Some(response) = self.check_for_targets(conn) {
-            return Some(response);
+        let weapon_power = WeaponModule::get_max_damage(&self.modules.m_weapons);
+
+        if weapon_power != 0 {
+            if let Some(response) = self.check_for_targets(conn) {
+                println!("Robot {}: found target", self.data.id);
+                return Some(response);
+            }
         }
 
         None

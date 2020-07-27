@@ -4,12 +4,14 @@ mod collect;
 mod exfil;
 mod moveproc;
 mod neutral;
+mod pursue;
 mod scan;
 
 pub use collect::*;
 pub use exfil::*;
 pub use moveproc::*;
 pub use neutral::*;
+pub use pursue::*;
 pub use scan::*;
 
 use super::Robot;
@@ -42,7 +44,7 @@ pub enum ProcessResult {
     /// Transition back to the neutral mode
     TransitionToNeutral,
     /// Transition to pursuit of a robot
-    TransitionToPursuit(i64),
+    TransitionToPursue(i64),
 }
 
 /// List of all the processes with helpers to run the process
@@ -52,6 +54,7 @@ pub enum Processes {
     Exfil,
     Move,
     Neutral,
+    Pursue,
     Scan,
 }
 

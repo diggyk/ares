@@ -19,7 +19,9 @@ impl Process for Move {
         robot.use_power(Some(conn), power_need);
 
         // Take the next move based on the drive system
-        robot.move_robot(conn);
+        if let ProcessResult::Fail = robot.move_robot(conn) {
+            return ProcessResult::TransitionToNeutral;
+        }
 
         // we scan only so we can react to other robots
         let mut _visible_robots: Vec<VisibleRobot> = Vec::new();
@@ -99,7 +101,7 @@ impl Process for Move {
         if target_coords == robot_coords {
             robot.movement_queue = Some(traversal::find_spin(robot.data.orientation, orientation));
         } else {
-            let moves = traversal::find_path(robot, target_coords);
+            let moves = traversal::find_path(robot, target_coords, false);
             match moves {
                 Ok(path_queue) => robot.movement_queue = Some(path_queue),
                 Err(s) => {

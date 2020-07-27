@@ -283,7 +283,6 @@ impl Robot {
 
     /// Update the status text
     pub fn set_status_text(&mut self, conn: Option<&PgConnection>, status: &str) {
-        println!("Add status: {}", status);
         let mut lines: Vec<&str> = self.data.status_text.split("\n").collect();
         lines.reverse();
         lines.push(status);
@@ -509,6 +508,26 @@ impl Robot {
         self.visible_valuables = visible_valuables.to_owned().to_vec();
     }
 
+    /// Get a map of coords to full gridcessl that this robot knows about
+    pub fn get_known_cells(&self) -> HashMap<Coords, GridCell> {
+        let grid = self.grid.lock().unwrap();
+        let mut known_cells_full: HashMap<Coords, GridCell> = HashMap::new();
+        // convert the RobotKnownCell into full gridcells of the known cells
+        // we only want to find paths within our known cells
+        for known_cell in &self.known_cells {
+            let coords = Coords {
+                q: known_cell.q,
+                r: known_cell.r,
+            };
+
+            if let Some(cell) = grid.cells.get(&coords) {
+                known_cells_full.insert(coords, *cell);
+            }
+        }
+
+        known_cells_full
+    }
+
     /// Get a map of coords to full gridcells that this robot knows about
     /// and isn't occupied by a known other robot
     pub fn get_known_unoccupied_cells(&self) -> HashMap<Coords, GridCell> {
@@ -628,18 +647,36 @@ impl Robot {
         self.data.mined_amount += amount;
         self.data.val_inventory += amount;
 
-        if conn.is_none() {
-            return ();
+        if conn.is_some() {
+            let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
+                .set((
+                    robots::mined_amount.eq(self.data.mined_amount),
+                    robots::val_inventory.eq(self.data.val_inventory),
+                ))
+                .execute(conn.unwrap());
         }
+    }
 
-        let conn = conn.unwrap();
+    /// Update our pursuit details
+    pub fn update_pursuit_details(
+        &mut self,
+        conn: Option<&PgConnection>,
+        other_id: i64,
+        other_coords: &Coords,
+    ) {
+        self.data.pursuit_id = other_id;
+        self.data.pursuit_last_q = other_coords.q;
+        self.data.pursuit_last_r = other_coords.r;
 
-        let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
-            .set((
-                robots::mined_amount.eq(self.data.mined_amount),
-                robots::val_inventory.eq(self.data.val_inventory),
-            ))
-            .execute(conn);
+        if conn.is_some() {
+            let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
+                .set((
+                    robots::pursuit_id.eq(self.data.pursuit_id),
+                    robots::pursuit_last_q.eq(self.data.pursuit_last_q),
+                    robots::pursuit_last_r.eq(self.data.pursuit_last_r),
+                ))
+                .execute(conn.unwrap());
+        }
     }
 
     fn set_exfil_countdown(&mut self, conn: Option<&PgConnection>, value: i32) {
@@ -716,6 +753,7 @@ impl Robot {
             Processes::Exfil => Some(Exfil::run(conn, self, None)),
             Processes::Move => Some(Move::run(conn, self, None)),
             Processes::Neutral => Some(Neutral::run(conn, self, None)),
+            Processes::Pursue => Some(Pursue::run(conn, self, None)),
             Processes::Scan => Some(ProcessResult::Ok),
         };
 
@@ -748,6 +786,10 @@ impl Robot {
             Some(ProcessResult::TransitionToNeutral) => {
                 Neutral::init(conn, self, result);
                 self.active_process = Some(Processes::Neutral);
+            }
+            Some(ProcessResult::TransitionToPursue { .. }) => {
+                Pursue::init(conn, self, result);
+                self.active_process = Some(Processes::Pursue);
             }
             Some(ProcessResult::ServerRequest(request)) => {
                 return Some(request);

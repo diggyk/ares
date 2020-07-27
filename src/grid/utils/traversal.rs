@@ -168,8 +168,17 @@ pub fn path_to_moves(start: CoordsAndDir, path: &Vec<&FromStep>) -> Result<Vec<M
 }
 
 // Given a target coordinate, find a path there using only known cells by this robot
-pub fn find_path(robot: &Robot, target_coords: Coords) -> Result<Vec<MoveStep>, String> {
-    let known_cells_full = robot.get_known_unoccupied_cells();
+pub fn find_path(
+    robot: &Robot,
+    target_coords: Coords,
+    ignore_others: bool,
+) -> Result<Vec<MoveStep>, String> {
+    let known_cells_full: HashMap<Coords, GridCell>;
+    if ignore_others {
+        known_cells_full = robot.get_known_cells();
+    } else {
+        known_cells_full = robot.get_known_unoccupied_cells();
+    }
     let starting_coords = Coords {
         q: robot.data.q,
         r: robot.data.r,
@@ -247,7 +256,7 @@ pub fn find_closest_coords(robot: &Robot, locs: Vec<Coords>, reachable: bool) ->
     let mut closest: Option<Coords> = None;
     let mut shortest_distance = 100;
     for coord in locs {
-        if reachable && traversal::find_path(robot, coord).is_err() {
+        if reachable && traversal::find_path(robot, coord, false).is_err() {
             continue;
         }
         let distance = coords.distance_to(&coord);
@@ -284,7 +293,7 @@ pub fn find_farthest_coords(
     let mut farthest: Option<Coords> = None;
     let mut farthest_distance = 0;
     for coord in locs {
-        if reachable && traversal::find_path(robot, coord).is_err() {
+        if reachable && traversal::find_path(robot, coord, false).is_err() {
             continue;
         }
         let distance = coords.distance_to(&coord);
