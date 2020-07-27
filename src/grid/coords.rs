@@ -243,7 +243,7 @@ impl Coords {
     }
 
     // this conversion is to map the center of the cells onto a standard
-    // flat plan with an x and y axis
+    // flat plane with an x and y axis
     pub fn to_flat2d(&self) -> CoordsKind {
         let q = self.q as f64;
         let r = self.r as f64;
