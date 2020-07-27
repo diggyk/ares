@@ -35,12 +35,14 @@ pub enum ProcessResult {
     TransitionToCollect,
     /// Transition to Exfiltration
     TransitionToExfiltrate,
-    /// Transition back to the neutral mode
-    TransitionToNeutral,
     /// Indicate a switch to Flee, which is really a switch to Move but we log it
     TransitionToFlee(Coords, Dir),
     /// Indicate a switch to Move; the last bool means to spin 180 at the end
     TransitionToMove(Coords, Dir, bool),
+    /// Transition back to the neutral mode
+    TransitionToNeutral,
+    /// Transition to pursuit of a robot
+    TransitionToPursuit(i64),
 }
 
 /// List of all the processes with helpers to run the process

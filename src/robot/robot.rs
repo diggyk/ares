@@ -42,6 +42,9 @@ pub struct RobotData {
     pub exfil_countdown: i32,
     pub hibernate_countdown: i32,
     pub status_text: String,
+    pub pursuit_id: i64,
+    pub pursuit_last_q: i32,
+    pub pursuit_last_r: i32,
 }
 
 /// Represents a grid cell that is known by a robot
@@ -254,6 +257,9 @@ impl Robot {
                 exfil_countdown: -1,
                 hibernate_countdown: -1,
                 status_text: String::from("I'm ready to work!"),
+                pursuit_id: -1,
+                pursuit_last_q: -1,
+                pursuit_last_r: -1,
             }
         }
 

@@ -12,6 +12,7 @@ pub enum ThreatLevel {
     Unknown,
     Weaker,
     Stronger,
+    Equal,
 }
 
 /// Holds information about robots visible from the last scan
@@ -116,8 +117,10 @@ impl Process for Scan {
                         threat_level = ThreatLevel::Unknown;
                     } else if other_strength.unwrap() > &weapon_strength {
                         threat_level = ThreatLevel::Stronger;
-                    } else {
+                    } else if other_strength.unwrap() < &weapon_strength {
                         threat_level = ThreatLevel::Weaker;
+                    } else {
+                        threat_level = ThreatLevel::Equal;
                     }
 
                     visible_robots.push(VisibleRobot {

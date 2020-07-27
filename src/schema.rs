@@ -56,9 +56,9 @@ table! {
         exfil_countdown -> Int4,
         hibernate_countdown -> Int4,
         status_text -> Varchar,
-        pursuit_id -> Nullable<Int4>,
-        pursuit_last_q -> Nullable<Int4>,
-        pursuit_last_r -> Nullable<Int4>,
+        pursuit_id -> Int8,
+        pursuit_last_q -> Int4,
+        pursuit_last_r -> Int4,
     }
 }
 

@@ -30,7 +30,7 @@ impl Process for Move {
             return ProcessResult::OutOfPower;
         }
 
-        if let Some(response) = robot.respond_to_threats(Some(conn)) {
+        if let Some(response) = robot.respond_to_others(Some(conn)) {
             return response;
         }
 
