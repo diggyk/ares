@@ -284,7 +284,6 @@ impl Robot {
         lines.reverse();
 
         let lines: Vec<&str> = lines.iter().take(5).map(|s| *s).collect();
-        println!("{:#?}", lines);
 
         self.data.status_text = lines.join("\n");
 

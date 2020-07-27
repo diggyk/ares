@@ -39,37 +39,8 @@ impl Process for Neutral {
             return ProcessResult::OutOfPower;
         }
 
-        // If we just scanned a robot of stronger or unknown capabilites,
-        // we want to flee
-        let _threats: Vec<&VisibleRobot> = _visible_robots
-            .iter()
-            .filter(|r| r.threat_level != ThreatLevel::Weaker)
-            .collect();
-
-        let closest_threat_coords: Option<Coords> = Neutral::find_closest_coords(
-            robot,
-            _visible_robots.iter().map(|r| r.coords).collect(),
-            false,
-        );
-
-        if closest_threat_coords.is_some() {
-            let flee_coords = Neutral::find_farthest_coords(
-                robot,
-                robot
-                    .get_known_unoccupied_cells()
-                    .keys()
-                    .map(|c| c.clone())
-                    .collect(),
-                true,
-                closest_threat_coords,
-            );
-
-            if flee_coords.is_some() {
-                return ProcessResult::TransitionToFlee(
-                    flee_coords.unwrap(),
-                    robot.data.orientation,
-                );
-            }
+        if let Some(response) = robot.respond_to_threats(Some(conn)) {
+            return response;
         }
 
         // filter out valuables that have a robot sitting on them
@@ -80,7 +51,7 @@ impl Process for Neutral {
 
         if _visible_valuables.len() > 0 {
             // find the closest reachable valuables
-            let closest_coords = Neutral::find_closest_coords(
+            let closest_coords = traversal::find_closest_coords(
                 robot,
                 _visible_valuables.iter().map(|v| v.coords).collect(),
                 true,
@@ -117,67 +88,6 @@ impl Neutral {
     fn next(robot: &Robot) -> ProcessResult {
         // find random unexplore cell
         return Neutral::goto_random_unexplored_cell(robot);
-    }
-
-    // given a list of coords, pick the one that's closest
-    // If `reachable` is true, we must be able to find a path to the coords based on
-    // what is in memory
-    fn find_closest_coords(robot: &Robot, locs: Vec<Coords>, reachable: bool) -> Option<Coords> {
-        let coords = Coords {
-            q: robot.data.q,
-            r: robot.data.r,
-        };
-        let mut closest: Option<Coords> = None;
-        let mut shortest_distance = 100;
-        for coord in locs {
-            if reachable && traversal::find_path(robot, coord).is_err() {
-                continue;
-            }
-            let distance = coords.distance_to(&coord);
-            if distance < shortest_distance {
-                closest = Some(coord);
-                shortest_distance = distance;
-            }
-        }
-
-        closest
-    }
-
-    // given a list of coords, pick the one that's closest
-    // If `reachable` is true, we must be able to find a path to the coords based on
-    // what is in memory
-    // If 'origin_coords' is specified, we only use the robot's memory but try to find
-    // the furthest point away from the origin coords instead
-    fn find_farthest_coords(
-        robot: &Robot,
-        locs: Vec<Coords>,
-        reachable: bool,
-        origin_coords: Option<Coords>,
-    ) -> Option<Coords> {
-        let coords: Coords;
-        if origin_coords.is_none() {
-            coords = Coords {
-                q: robot.data.q,
-                r: robot.data.r,
-            };
-        } else {
-            coords = origin_coords.unwrap();
-        }
-
-        let mut closest: Option<Coords> = None;
-        let mut shortest_distance = 100;
-        for coord in locs {
-            if reachable && traversal::find_path(robot, coord).is_err() {
-                continue;
-            }
-            let distance = coords.distance_to(&coord);
-            if distance < shortest_distance {
-                closest = Some(coord);
-                shortest_distance = distance;
-            }
-        }
-
-        closest
     }
 
     fn goto_random_unexplored_cell(robot: &Robot) -> ProcessResult {

@@ -236,6 +236,67 @@ pub fn is_reachable(
     path.unwrap().len() <= steps as usize
 }
 
+// given a list of coords, pick the one that's closest
+// If `reachable` is true, we must be able to find a path to the coords based on
+// what is in memory
+pub fn find_closest_coords(robot: &Robot, locs: Vec<Coords>, reachable: bool) -> Option<Coords> {
+    let coords = Coords {
+        q: robot.data.q,
+        r: robot.data.r,
+    };
+    let mut closest: Option<Coords> = None;
+    let mut shortest_distance = 100;
+    for coord in locs {
+        if reachable && traversal::find_path(robot, coord).is_err() {
+            continue;
+        }
+        let distance = coords.distance_to(&coord);
+        if distance < shortest_distance {
+            closest = Some(coord);
+            shortest_distance = distance;
+        }
+    }
+
+    closest
+}
+
+// given a list of coords, pick the one that's closest
+// If `reachable` is true, we must be able to find a path to the coords based on
+// what is in memory
+// If 'origin_coords' is specified, we only use the robot's memory but try to find
+// the furthest point away from the origin coords instead
+pub fn find_farthest_coords(
+    robot: &Robot,
+    locs: Vec<Coords>,
+    reachable: bool,
+    origin_coords: Option<Coords>,
+) -> Option<Coords> {
+    let coords: Coords;
+    if origin_coords.is_none() {
+        coords = Coords {
+            q: robot.data.q,
+            r: robot.data.r,
+        };
+    } else {
+        coords = origin_coords.unwrap();
+    }
+
+    let mut farthest: Option<Coords> = None;
+    let mut farthest_distance = 0;
+    for coord in locs {
+        if reachable && traversal::find_path(robot, coord).is_err() {
+            continue;
+        }
+        let distance = coords.distance_to(&coord);
+        if distance > farthest_distance {
+            farthest = Some(coord);
+            farthest_distance = distance;
+        }
+    }
+
+    farthest
+}
+
 #[cfg(test)]
 #[test]
 fn test_spins() {
