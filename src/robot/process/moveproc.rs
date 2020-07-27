@@ -30,6 +30,10 @@ impl Process for Move {
             return ProcessResult::OutOfPower;
         }
 
+        if let Some(response) = robot.respond_to_threats(Some(conn)) {
+            return response;
+        }
+
         // if we are not out of moves, switch to neutral
         if robot.movement_queue.is_none() {
             robot.movement_queue = None;
