@@ -277,14 +277,23 @@ impl Robot {
 
     /// Update the status text
     pub fn set_status_text(&mut self, conn: Option<&PgConnection>, status: &str) {
-        self.data.status_text = status.to_string();
+        println!("Add status: {}", status);
+        let mut lines: Vec<&str> = self.data.status_text.split("\n").collect();
+        lines.reverse();
+        lines.push(status);
+        lines.reverse();
+
+        let lines: Vec<&str> = lines.iter().take(5).map(|s| *s).collect();
+        println!("{:#?}", lines);
+
+        self.data.status_text = lines.join("\n");
 
         if conn.is_none() {
             return;
         }
 
         let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
-            .set(robots::status_text.eq(status))
+            .set(robots::status_text.eq(self.data.status_text.clone()))
             .execute(conn.unwrap());
     }
 
