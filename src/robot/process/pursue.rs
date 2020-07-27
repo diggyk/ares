@@ -87,9 +87,9 @@ impl Process for Pursue {
             return ProcessResult::OutOfPower;
         }
         robot.use_power(Some(conn), power_need);
-        if let ProcessResult::Fail = robot.move_robot(conn) {
-            return ProcessResult::TransitionToNeutral;
-        }
+
+        // try to move but don't care if we fail (we might be right next to the target)
+        robot.move_robot(conn);
 
         // scan and make sure we still see our robot
         let mut _visible_robots: Vec<VisibleRobot> = Vec::new();
@@ -116,11 +116,16 @@ impl Process for Pursue {
             );
         }
 
-        // update our info on the target
+        // we still see the target so update our info on the target
         robot.update_pursuit_details(Some(conn), robot.data.pursuit_id, &latest_coords.unwrap());
 
-        let weapon_range = WeaponModule::get_range(&robot.modules.m_weapons);
-        if robot_coords.distance_to(&latest_coords.unwrap()) <= weapon_range {
+        let in_range = WeaponModule::in_range(
+            &robot.modules.m_weapons,
+            &robot_coords,
+            &robot.data.orientation,
+            &latest_coords.unwrap(),
+        );
+        if in_range {
             // TODO: make sure this is within the FOV
             robot.set_status_text(
                 Some(conn),

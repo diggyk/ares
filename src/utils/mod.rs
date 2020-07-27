@@ -65,7 +65,7 @@ fn test_angles() {
 }
 
 /// Get the bearing between the origin (coords1) and target(coords2)
-pub fn get_bearing(dir: Dir, coords1: Coords, coords2: Coords) -> Option<i32> {
+pub fn get_bearing(dir: &Dir, coords1: &Coords, coords2: &Coords) -> Option<i32> {
     let x1: f64;
     let y1: f64;
     let mut x2: f64;
@@ -106,38 +106,46 @@ pub fn get_bearing(dir: Dir, coords1: Coords, coords2: Coords) -> Option<i32> {
 fn test_bearings() {
     assert_eq!(
         Some(0),
-        get_bearing(Dir::Orient0, Coords { q: 0, r: 0 }, Coords { q: 0, r: 5 })
+        get_bearing(
+            &Dir::Orient0,
+            &Coords { q: 0, r: 0 },
+            &Coords { q: 0, r: 5 }
+        )
     );
 
     assert_eq!(
         Some(-60),
-        get_bearing(Dir::Orient0, Coords { q: 0, r: 0 }, Coords { q: -2, r: 2 })
+        get_bearing(
+            &Dir::Orient0,
+            &Coords { q: 0, r: 0 },
+            &Coords { q: -2, r: 2 }
+        )
     );
 
     assert_eq!(
         Some(0),
         get_bearing(
-            Dir::Orient180,
-            Coords { q: -2, r: 3 },
-            Coords { q: -2, r: 0 }
+            &Dir::Orient180,
+            &Coords { q: -2, r: 3 },
+            &Coords { q: -2, r: 0 }
         )
     );
 
     assert_eq!(
         Some(-120),
         get_bearing(
-            Dir::Orient120,
-            Coords { q: -3, r: 4 },
-            Coords { q: -3, r: 6 }
+            &Dir::Orient120,
+            &Coords { q: -3, r: 4 },
+            &Coords { q: -3, r: 6 }
         )
     );
 
     assert_eq!(
         Some(-180),
         get_bearing(
-            Dir::Orient240,
-            Coords { q: 1, r: -2 },
-            Coords { q: 3, r: -2 }
+            &Dir::Orient240,
+            &Coords { q: 1, r: -2 },
+            &Coords { q: 3, r: -2 }
         )
     );
 }

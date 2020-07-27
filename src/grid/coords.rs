@@ -112,6 +112,19 @@ impl From<Dir> for i32 {
     }
 }
 
+impl From<&Dir> for i32 {
+    fn from(item: &Dir) -> i32 {
+        match item {
+            Dir::Orient0 => 0,
+            Dir::Orient60 => 60,
+            Dir::Orient120 => 120,
+            Dir::Orient180 => 180,
+            Dir::Orient240 => 240,
+            Dir::Orient300 => 300,
+        }
+    }
+}
+
 impl Distribution<Dir> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Dir {
         match rng.gen_range(0, 6) {
