@@ -5,6 +5,7 @@ use std::collections::HashMap;
 
 use super::coords::*;
 use super::edge::EdgeType;
+use crate::robot::*;
 use crate::schema::*;
 
 #[derive(Clone, Copy, Debug, Queryable, Insertable)]
@@ -277,8 +278,24 @@ impl Grid {
         coords
     }
 
+    /// Add a robot to the grid data
+    pub fn add_robot(&mut self, robot: &Robot) {
+        let coords = Coords {
+            q: robot.data.q,
+            r: robot.data.r,
+        };
+        let id = robot.data.id;
+        let weapon_strength = weapon::WeaponModule::get_max_damage(&robot.modules.m_weapons);
+
+        self.robot_locs.insert(coords, id);
+        self.robot_strengths.insert(id, weapon_strength);
+    }
+
     /// Remove a robot
     pub fn remove_robot_by_loc(&mut self, coords: &Coords) {
+        if let Some(id) = self.robot_locs.get(coords) {
+            self.robot_strengths.remove(id);
+        }
         self.robot_locs.remove(coords);
     }
 

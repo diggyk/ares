@@ -38,15 +38,8 @@ impl Server {
         let robots: HashMap<i64, Robot> = Robot::load_all(&config.conn, grid.clone());
         println!("Loaded {} active robots", robots.len());
 
-        let mut robot_locs: HashMap<Coords, i64> = HashMap::new();
-        for (id, robot) in &robots {
-            robot_locs.insert(
-                Coords {
-                    q: robot.data.q,
-                    r: robot.data.r,
-                },
-                *id,
-            );
+        for (_, robot) in &robots {
+            grid.lock().unwrap().add_robot(robot);
         }
 
         let valuables: HashMap<i64, Valuable> = Valuable::load_all(&config.conn);
@@ -61,7 +54,6 @@ impl Server {
             );
         }
 
-        grid.lock().unwrap().robot_locs = robot_locs;
         grid.lock().unwrap().valuables_locs = valuables_locs;
 
         Server {
@@ -118,11 +110,9 @@ impl Server {
             self.grid.clone(),
             Some(modules),
         );
-        grid.robot_locs.insert(coords.clone(), robot.data.id);
-        grid.robot_strengths.insert(
-            robot.data.id,
-            weapon::WeaponModule::get_max_damage(&weapon_module),
-        );
+
+        grid.add_robot(&robot);
+
         self.robots.insert(robot.data.id, robot);
     }
 
