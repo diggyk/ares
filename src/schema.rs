@@ -59,6 +59,8 @@ table! {
         pursuit_id -> Int8,
         pursuit_last_q -> Int4,
         pursuit_last_r -> Int4,
+        attacked_from -> Int4,
+        attacked_by -> Int8,
     }
 }
 
