@@ -125,12 +125,11 @@ impl Process for Pursue {
             &robot.data.orientation,
             &latest_coords.unwrap(),
         );
+        println!("Robot {}: In range? {}", robot.data.id, in_range);
         if in_range {
-            // TODO: make sure this is within the FOV
-            robot.set_status_text(
-                Some(conn),
-                &format!("I would fire on {}", robot.data.pursuit_id),
-            );
+            return ProcessResult::ServerRequest(Request::Attack {
+                target_id: robot.data.pursuit_id,
+            });
         }
 
         ProcessResult::Ok

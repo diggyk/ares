@@ -580,8 +580,6 @@ impl Robot {
         let orientation = self.data.orientation;
         let next_step = self.get_move();
 
-        // println!("Move: => {:?}", next_step);
-
         if next_step.is_none() {
             return ProcessResult::Fail;
         }
@@ -640,10 +638,6 @@ impl Robot {
 
     /// Called as part of a server response when we have successfully mined a valuable
     pub fn successfully_mined(&mut self, conn: Option<&PgConnection>, amount: i32) {
-        println!(
-            "Robot {}: mined {}; total {}",
-            self.data.id, amount, self.data.val_inventory
-        );
         self.data.mined_amount += amount;
         self.data.val_inventory += amount;
 
@@ -713,7 +707,6 @@ impl Robot {
 
     /// Delete self
     pub fn destroy(&mut self, conn: Option<&PgConnection>) {
-        println!("Robot {}: Destroy", self.data.id);
         if conn.is_some() {
             let _ = diesel::delete(robots::table.filter(robots::id.eq(self.data.id)))
                 .execute(conn.unwrap());
@@ -742,6 +735,13 @@ impl Robot {
     /// Handles a tick
     pub fn tick(&mut self, conn: &PgConnection) -> Option<Request> {
         self.ident();
+
+        // if our hull strength is less than or equal to zero, explode!
+        if self.data.hull_strength <= 0 {
+            Explode::init(conn, self, None);
+            self.active_process = Some(Processes::Explode);
+        }
+
         if let None = self.active_process {
             self.active_process = Some(Processes::Neutral);
         }
@@ -751,6 +751,7 @@ impl Robot {
         let result = match process {
             Processes::Collect => Some(Collect::run(conn, self, None)),
             Processes::Exfil => Some(Exfil::run(conn, self, None)),
+            Processes::Explode => Some(Explode::run(conn, self, None)),
             Processes::Move => Some(Move::run(conn, self, None)),
             Processes::Neutral => Some(Neutral::run(conn, self, None)),
             Processes::Pursue => Some(Pursue::run(conn, self, None)),

@@ -68,6 +68,20 @@ impl Valuable {
         _valuables
     }
 
+    fn update_in_db(&mut self, conn: &PgConnection) {
+        // update the db
+        let _ = diesel::update(valuables::table.filter(valuables::id.eq(self.id)))
+            .set(valuables::amount.eq(self.amount))
+            .execute(conn);
+    }
+
+    /// Increase in value
+    pub fn add_to_amount(&mut self, conn: &PgConnection, amount: i32) {
+        self.amount += amount;
+
+        self.update_in_db(conn);
+    }
+
     /// Attempt to mine a certain amount
     pub fn mine(&mut self, conn: &PgConnection, amount: i32) -> i32 {
         let mined_amount: i32;
@@ -80,10 +94,7 @@ impl Valuable {
             self.amount -= mined_amount;
         }
 
-        // update the db
-        let _ = diesel::update(valuables::table.filter(valuables::id.eq(self.id)))
-            .set(valuables::amount.eq(self.amount))
-            .execute(conn);
+        self.update_in_db(conn);
 
         mined_amount
     }

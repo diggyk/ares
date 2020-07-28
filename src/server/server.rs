@@ -116,17 +116,30 @@ impl Server {
         self.robots.insert(robot.data.id, robot);
     }
 
+    /// Spawn a new valuable at a given location for a given amount
+    fn spawn_valuable(&mut self, coords: &Coords, amount: i32) {
+        let mut grid = self.grid.lock().expect("Could not get lock on grid");
+        if let Some(valuable_id) = grid.valuables_locs.get(coords) {
+            let valuable = self.valuables.get_mut(valuable_id);
+            if valuable.is_some() {
+                valuable.unwrap().add_to_amount(&self.config.conn, amount);
+            }
+        } else {
+            let valuable = Valuable::new(coords.clone(), amount, Some(&self.config.conn));
+            grid.valuables_locs.insert(coords.clone(), valuable.id);
+            self.valuables.insert(valuable.id, valuable);
+        }
+    }
+
     /// Spawn a new valuable in a random open location with a random amount
-    fn spawn_valuable(&mut self) {
+    fn spawn_random_valuable(&mut self) {
         let mut grid = self.grid.lock().expect("Could not get lock on grid");
         let coords = grid.get_random_open_cell();
         let mut rng = rand::thread_rng();
         let amount: i32 = rng.gen_range(50, 5000);
+        drop(grid);
 
-        let valuable = Valuable::new(coords.clone(), amount, Some(&self.config.conn));
-
-        grid.valuables_locs.insert(coords.clone(), valuable.id);
-        self.valuables.insert(valuable.id, valuable);
+        self.spawn_valuable(&coords, amount);
     }
 
     /// Check all the valuables; if they are now exhausted, tell them
@@ -189,12 +202,63 @@ impl Server {
         })
     }
 
+    /// Exfiltrate the robot by removing it from the grid and our own list of robots
     fn exfiltrate_robot(&mut self, robot_id: &i64) -> Option<Response> {
-        println!("Server exfil of robot {}", robot_id);
         let mut grid = self.grid.lock().unwrap();
         grid.remove_robot_by_id(robot_id);
 
         self.robots.remove(robot_id);
+
+        None
+    }
+
+    /// Explode the robot by removing it from the grid and our own list of robots
+    /// and creating a valuable at its location
+    fn explode(&mut self, robot_id: &i64, valuables: i32) -> Option<Response> {
+        let mut grid = self.grid.lock().unwrap();
+        grid.remove_robot_by_id(robot_id);
+        drop(grid);
+
+        let robot = self.robots.remove(robot_id);
+
+        let coords: Coords;
+        if robot.is_some() {
+            coords = Coords {
+                q: robot.as_ref().unwrap().data.q,
+                r: robot.as_ref().unwrap().data.r,
+            };
+        } else {
+            return None;
+        }
+
+        self.spawn_valuable(&coords, valuables);
+
+        None
+    }
+
+    fn attack_robot(&mut self, attacker_id: &i64, target_id: &i64) -> Option<Response> {
+        let mut rng = rand::thread_rng();
+
+        let attacker = &self.robots.get_mut(attacker_id);
+        if attacker.is_none() {
+            return None;
+        }
+
+        let min_power =
+            weapon::WeaponModule::get_min_damage(&attacker.as_ref().unwrap().modules.m_weapons);
+        let max_power =
+            weapon::WeaponModule::get_max_damage(&attacker.as_ref().unwrap().modules.m_weapons);
+
+        let damage = rng.gen_range(min_power, max_power + 1);
+        println!(
+            "Server: received attack from {} to {} for {}",
+            attacker_id, target_id, damage,
+        );
+
+        let target = self.robots.get_mut(target_id);
+        target
+            .unwrap()
+            .update_hull_strength(Some(&self.config.conn), -1 * damage);
 
         None
     }
@@ -205,7 +269,9 @@ impl Server {
     /// mining or shooting at others
     fn handle_request_for_robot(&mut self, robot_id: &i64, request: Request) -> Option<Response> {
         match request {
+            Request::Attack { target_id } => self.attack_robot(&robot_id, &target_id),
             Request::Exfiltrate { robot_id } => self.exfiltrate_robot(&robot_id),
+            Request::Explode { valuables } => self.explode(&robot_id, valuables),
             Request::Mine {
                 valuable_id,
                 amount,
@@ -249,7 +315,7 @@ impl Server {
             }
 
             while self.valuables.len() < self.config.max_valuables {
-                self.spawn_valuable();
+                self.spawn_random_valuable();
             }
 
             // because we need the server `self` to be mutable, we cannot borrow

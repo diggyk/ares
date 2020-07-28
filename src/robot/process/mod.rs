@@ -2,6 +2,7 @@ use diesel::PgConnection;
 
 mod collect;
 mod exfil;
+mod explode;
 mod moveproc;
 mod neutral;
 mod pursue;
@@ -9,6 +10,7 @@ mod scan;
 
 pub use collect::*;
 pub use exfil::*;
+pub use explode::*;
 pub use moveproc::*;
 pub use neutral::*;
 pub use pursue::*;
@@ -37,6 +39,8 @@ pub enum ProcessResult {
     TransitionToCollect,
     /// Transition to Exfiltration
     TransitionToExfiltrate,
+    /// Transition to Explode
+    TransitionToExplode,
     /// Indicate a switch to Flee, which is really a switch to Move but we log it
     TransitionToFlee(Coords, Dir),
     /// Indicate a switch to Move; the last bool means to spin 180 at the end
@@ -52,6 +56,7 @@ pub enum ProcessResult {
 pub enum Processes {
     Collect,
     Exfil,
+    Explode,
     Move,
     Neutral,
     Pursue,

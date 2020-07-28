@@ -77,20 +77,25 @@ impl WeaponModule {
 
         // out of range
         if coords1.distance_to(coords2) > range {
+            println!("Too far");
             return false;
         }
 
         let bearing = get_bearing(dir, coords1, coords2);
         if bearing.is_none() {
+            println!("Can't find bearings");
             return false;
         }
 
         // can only shoot straight and bearing is not straight ahead
         if fov == 0 && bearing.unwrap() != 0 {
+            println!("from: {:?} facing {:?} to: {:?}", coords1, dir, coords2);
+            println!("Bearing mismatch: {}", bearing.unwrap());
             return false;
         } else if bearing.unwrap().abs() <= fov / 2 {
             return true;
         } else {
+            println!("Some other issue");
             return false;
         }
     }

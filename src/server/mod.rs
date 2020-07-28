@@ -98,8 +98,12 @@ pub fn get_config() -> ServerConfig {
 /// With each tick, a robot can make a request of the server
 #[derive(Clone, Debug, PartialEq)]
 pub enum Request {
-    ///
+    /// Request to attack an enemy
+    Attack { target_id: i64 },
+    /// Request to leave the grid
     Exfiltrate { robot_id: i64 },
+    /// Request to explode, leaving behind valuables
+    Explode { valuables: i32 },
     /// Request to mine the valuable for a given amount
     Mine { valuable_id: i64, amount: i32 },
 }

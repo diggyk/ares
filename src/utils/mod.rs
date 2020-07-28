@@ -36,7 +36,8 @@ pub fn get_angle(x1: f64, y1: f64) -> f64 {
         ang1.abs()
     // positive, negative
     } else if (x1 > 0.0) && (y1 < 0.0) {
-        ang1.abs() + 90.0
+        println!("{}", ang1);
+        ang1 + 180.0
     // negative, negative
     } else if (x1 < 0.0) && (y1 < 0.0) {
         ang1 + 180.0
@@ -54,10 +55,11 @@ fn test_angles() {
     // assert_eq!(225.0, get_angle(-100.0, -100.0));
     assert_eq!(135.0, get_angle(100.0, -100.0));
     assert_eq!(30.0, get_angle(10.0, 17.0));
-    assert_eq!(150.0, get_angle(8.66, -5.0));
+    assert_eq!(120.0, get_angle(8.66, -5.0));
     assert_eq!(265.0, get_angle(-9.9619, -0.871557));
-
     assert_eq!(300.0, get_angle(-3.4641016151377553, 2.0));
+    assert_eq!(120.0, get_angle(1.7320508075688785, -1.0));
+
     assert_eq!(0.0, get_angle(0.0, 10.0));
     assert_eq!(90.0, get_angle(5.0, 0.0));
     assert_eq!(180.0, get_angle(0.0, -3.0));
@@ -93,6 +95,8 @@ pub fn get_bearing(dir: &Dir, coords1: &Coords, coords2: &Coords) -> Option<i32>
     let a2 = get_angle(x2, y2) as i32;
 
     let mut bearing = a2 - a1;
+    println!("{},{} ; {} -> {} => {}", x2, y2, a2, a1, bearing);
+
     if bearing > 180 {
         bearing -= 360;
     } else if bearing < -180 {
@@ -146,6 +150,15 @@ fn test_bearings() {
             &Dir::Orient240,
             &Coords { q: 1, r: -2 },
             &Coords { q: 3, r: -2 }
+        )
+    );
+
+    assert_eq!(
+        Some(0),
+        get_bearing(
+            &Dir::Orient120,
+            &Coords { q: 9, r: -1 },
+            &Coords { q: 10, r: -2 }
         )
     );
 }
