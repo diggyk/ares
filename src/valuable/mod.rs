@@ -5,6 +5,8 @@ use std::collections::HashMap;
 use crate::grid::Coords;
 use crate::schema::*;
 
+const MAX_AMOUNT: i32 = 5000;
+
 #[derive(Debug, Queryable, Insertable)]
 #[table_name = "valuables"]
 pub struct NewValuable {
@@ -78,6 +80,9 @@ impl Valuable {
     /// Increase in value
     pub fn add_to_amount(&mut self, conn: &PgConnection, amount: i32) {
         self.amount += amount;
+        if self.amount > MAX_AMOUNT {
+            self.amount = MAX_AMOUNT;
+        }
 
         self.update_in_db(conn);
     }

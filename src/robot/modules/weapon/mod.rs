@@ -36,8 +36,8 @@ impl WeaponModule {
     pub fn get_max_damage(_name: &str) -> i32 {
         match _name {
             "none" => 0,
-            "blaster" => 250,
-            "supreme_blaster" => 500,
+            "blaster" => 100,
+            "supreme_blaster" => 200,
             _ => 0,
         }
     }
@@ -45,8 +45,8 @@ impl WeaponModule {
     pub fn get_min_damage(_name: &str) -> i32 {
         match _name {
             "none" => 0,
-            "blaster" => 100,
-            "supreme_blaster" => 250,
+            "blaster" => 50,
+            "supreme_blaster" => 100,
             _ => 0,
         }
     }
