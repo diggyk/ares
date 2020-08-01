@@ -75,10 +75,11 @@ impl Process for Neutral {
         Neutral::next(robot)
     }
 
-    // initialize this process
+    // initialize this process; clear any previous persuit details
     fn init(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
         println!("Robot {}: Transition to Neutral", robot.data.id);
         robot.set_status_text(Some(conn), "I'm idle.");
+        robot.update_pursuit_details(Some(conn), -1, &robot.get_coords());
         ProcessResult::Ok
     }
 }

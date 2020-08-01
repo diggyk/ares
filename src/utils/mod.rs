@@ -95,7 +95,6 @@ pub fn get_bearing(dir: &Dir, coords1: &Coords, coords2: &Coords) -> Option<i32>
     let a2 = get_angle(x2, y2) as i32;
 
     let mut bearing = a2 - a1;
-    println!("{},{} ; {} -> {} => {}", x2, y2, a2, a1, bearing);
 
     if bearing > 180 {
         bearing -= 360;

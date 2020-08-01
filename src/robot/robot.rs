@@ -45,6 +45,10 @@ pub struct RobotData {
     pub pursuit_id: i64,
     pub pursuit_last_q: i32,
     pub pursuit_last_r: i32,
+    pub attacked_from: i32,
+    pub attacked_by: i64,
+    pub attacked: i64,
+    pub damage_done: i32,
 }
 
 /// Represents a grid cell that is known by a robot
@@ -260,6 +264,10 @@ impl Robot {
                 pursuit_id: -1,
                 pursuit_last_q: -1,
                 pursuit_last_r: -1,
+                attacked_from: -1,
+                attacked_by: -1,
+                attacked: -1,
+                damage_done: -1,
             }
         }
 
@@ -439,6 +447,66 @@ impl Robot {
         self.movement_queue = None;
     }
 
+    /// Store the latest attacker into the database
+    fn persist_attacker_info(&self, conn: &PgConnection) {
+        let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
+            .set((
+                robots::attacked_by.eq(self.data.attacked_by),
+                robots::attacked_from.eq(self.data.attacked_from),
+            ))
+            .execute(conn);
+    }
+
+    /// Register an attack
+    pub fn record_attack(&mut self, conn: Option<&PgConnection>, attacker_id: i64, direction: i32) {
+        self.data.attacked_by = attacker_id;
+        self.data.attacked_from = direction;
+
+        if conn.is_some() {
+            self.persist_attacker_info(conn.unwrap());
+        }
+    }
+
+    /// Clear out attacker information
+    pub fn clear_attacker_info(&mut self, conn: Option<&PgConnection>) {
+        self.data.attacked_by = -1;
+        self.data.attacked_from = -1;
+
+        if conn.is_some() {
+            self.persist_attacker_info(conn.unwrap());
+        }
+    }
+
+    /// Store the latest attack results into the database
+    fn persist_attack_info(&self, conn: &PgConnection) {
+        let _ = diesel::update(robots::table.filter(robots::id.eq(self.data.id)))
+            .set((
+                robots::attacked.eq(self.data.attacked),
+                robots::damage_done.eq(self.data.damage_done),
+            ))
+            .execute(conn);
+    }
+
+    pub fn clear_attack_info(&mut self, conn: Option<&PgConnection>) {
+        self.data.attacked = -1;
+        self.data.damage_done = -1;
+
+        if conn.is_some() {
+            self.persist_attack_info(conn.unwrap());
+        }
+    }
+
+    /// Determine if we are under attack
+    pub fn is_under_attack(&self) -> bool {
+        self.data.attacked_by != -1
+    }
+
+    /// Get the direction of the attack
+    pub fn get_attack_dir(&self) -> Dir {
+        let dir: Dir = self.data.attacked_from.into();
+        dir
+    }
+
     /// Update known cells with new scans; remove old results to match limits
     pub fn update_known_cells(&mut self, conn: &PgConnection, new_cells: Vec<RobotKnownCell>) {
         let mut new_known_cells: Vec<RobotKnownCell> = Vec::new();
@@ -567,6 +635,25 @@ impl Robot {
         self.visible_others.iter().any(|r| r.coords == *coords)
     }
 
+    /// Get the robot's coordinates
+    pub fn get_coords(&self) -> Coords {
+        Coords {
+            q: self.data.q,
+            r: self.data.r,
+        }
+    }
+
+    /// Get the robot's coordinates and orientation
+    pub fn get_coords_and_orientation(&self) -> CoordsAndDir {
+        CoordsAndDir {
+            coords: Coords {
+                q: self.data.q,
+                r: self.data.r,
+            },
+            dir: self.data.orientation,
+        }
+    }
+
     /// Try to move a robot
     ///
     /// If moving the robot forward, 1) make sure there isn't a wall, and 2) make sure the
@@ -636,6 +723,26 @@ impl Robot {
             .execute(conn);
     }
 
+    /// Successfully attacked a target; record it for this tick
+    pub fn successfully_attacked(
+        &mut self,
+        conn: Option<&PgConnection>,
+        target_id: i64,
+        damage: i32,
+    ) {
+        self.data.attacked = target_id;
+        self.data.damage_done = damage;
+
+        self.set_status_text(
+            conn,
+            &format!("Attacked Robot {} for {}", target_id, damage),
+        );
+
+        if conn.is_some() {
+            self.persist_attack_info(conn.unwrap());
+        }
+    }
+
     /// Called as part of a server response when we have successfully mined a valuable
     pub fn successfully_mined(&mut self, conn: Option<&PgConnection>, amount: i32) {
         self.data.mined_amount += amount;
@@ -671,6 +778,11 @@ impl Robot {
                 ))
                 .execute(conn.unwrap());
         }
+    }
+
+    /// Are we pursuing someone
+    pub fn is_pursuing(&self) -> bool {
+        self.data.pursuit_id != -1
     }
 
     fn set_exfil_countdown(&mut self, conn: Option<&PgConnection>, value: i32) {
@@ -718,6 +830,10 @@ impl Robot {
     /// another robot
     pub fn handle_server_response(&mut self, conn: Option<&PgConnection>, response: Response) {
         match response {
+            Response::AttackFailed => (),
+            Response::AttackSuccess { target_id, damage } => {
+                self.successfully_attacked(conn, target_id, damage)
+            }
             // if we failed something, we should go back to the neutral position
             Response::Fail => {
                 Neutral::init(conn.unwrap(), self, None);
@@ -741,10 +857,31 @@ impl Robot {
             Explode::init(conn, self, None);
             self.active_process = Some(Processes::Explode);
         }
-
-        if let None = self.active_process {
+        // if we were attacked, we may need to flee
+        else if self.is_under_attack() && !self.is_pursuing() {
+            let attacker_dir: Dir = self.data.attacked_from.into();
+            println!(
+                "Robot {}: I was attacked by {} from direction {:?}",
+                self.data.id, self.data.attacked_by, attacker_dir
+            );
+            let response = self.respond_to_attack(Some(conn));
+            match response {
+                Some(ProcessResult::TransitionToFlee { .. }) => {
+                    if Move::init(conn, self, response) == ProcessResult::Ok {
+                        self.active_process = Some(Processes::Move);
+                    }
+                }
+                _ => {}
+            }
+        }
+        // if we have no active process, go to neutral
+        else if let None = self.active_process {
             self.active_process = Some(Processes::Neutral);
         }
+
+        // clear any previous attack details
+        self.clear_attack_info(Some(conn));
+        self.clear_attacker_info(Some(conn));
 
         // make the next move based on our active process
         let process = self.active_process.as_ref().unwrap().clone();
@@ -762,7 +899,7 @@ impl Robot {
         self.recharge_power(Some(conn));
 
         // If we are transitioning, initialize it
-        // If we are collecting, see if we have mined the max amount
+        // If we have a request to the server, return it
         match result {
             Some(ProcessResult::TransitionToCollect) => {
                 if Collect::init(conn, self, result) == ProcessResult::Ok {

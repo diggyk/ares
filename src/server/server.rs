@@ -10,6 +10,7 @@ use crate::grid::Dir;
 use crate::grid::Grid;
 use crate::robot::modules::*;
 use crate::robot::Robot;
+use crate::utils;
 use crate::valuable::*;
 
 /// ARES Server internal state
@@ -174,8 +175,8 @@ impl Server {
 
     fn _wait_for_enter(&self) -> std::io::Result<()> {
         println!("Paused (press enter)...");
-        let mut buffer = String::new();
-        std::io::stdin().read_to_string(&mut buffer)?;
+        let mut buffer = [0; 1];
+        std::io::stdin().read(&mut buffer)?;
         Ok(())
     }
 
@@ -239,10 +240,12 @@ impl Server {
     fn attack_robot(&mut self, attacker_id: &i64, target_id: &i64) -> Option<Response> {
         let mut rng = rand::thread_rng();
 
-        let attacker = &self.robots.get_mut(attacker_id);
+        let attacker = &self.robots.get(attacker_id);
         if attacker.is_none() {
             return None;
         }
+
+        let attacker_coords = attacker.as_ref().unwrap().get_coords();
 
         let min_power =
             weapon::WeaponModule::get_min_damage(&attacker.as_ref().unwrap().modules.m_weapons);
@@ -250,17 +253,38 @@ impl Server {
             weapon::WeaponModule::get_max_damage(&attacker.as_ref().unwrap().modules.m_weapons);
 
         let damage = rng.gen_range(min_power, max_power + 1);
+
+        // inflict damage to the target and then find the direction of the attack
+        // and register that as well
+        let mut target = self.robots.get_mut(target_id);
+        let target_coords = target.as_ref().unwrap().get_coords();
+        let mut attack_dir = utils::get_bearing(&Dir::Orient0, &target_coords, &attacker_coords);
+        if attack_dir.is_none() {
+            attack_dir = Some(Dir::get_random().into());
+        }
+
         println!(
-            "Server: received attack from {} to {} for {}",
-            attacker_id, target_id, damage,
+            "Server: received attack from {} to {} for {}; bearing from target to attacker: {}",
+            attacker_id,
+            target_id,
+            damage,
+            attack_dir.unwrap()
         );
 
-        let target = self.robots.get_mut(target_id);
         target
+            .as_mut()
             .unwrap()
             .update_hull_strength(Some(&self.config.conn), -1 * damage);
+        target.as_mut().unwrap().record_attack(
+            Some(&self.config.conn),
+            *attacker_id,
+            attack_dir.unwrap(),
+        );
 
-        None
+        Some(Response::AttackSuccess {
+            target_id: *target_id,
+            damage,
+        })
     }
 
     /// When we tick a robot, it may ask the server to do something
@@ -310,6 +334,10 @@ impl Server {
     pub fn run(&mut self) {
         let mut last_tick = SystemTime::now();
         while !self.shutdown {
+            if self.config.debug {
+                self._wait_for_enter().expect("Not possible");
+            }
+
             while self.robots.len() < self.config.max_bots {
                 self.spawn_robot();
             }
@@ -343,8 +371,6 @@ impl Server {
                 std::thread::sleep(Duration::from_millis(500));
                 last_tick = SystemTime::now();
             }
-
-            // self._wait_for_enter().expect("Not possible");
         }
     }
 }

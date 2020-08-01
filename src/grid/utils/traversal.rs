@@ -278,17 +278,16 @@ pub fn find_farthest_coords(
     robot: &Robot,
     locs: Vec<Coords>,
     reachable: bool,
-    origin_coords: Option<Coords>,
+    origin_coords: Option<&Coords>,
 ) -> Option<Coords> {
-    let coords: Coords;
-    if origin_coords.is_none() {
-        coords = Coords {
-            q: robot.data.q,
-            r: robot.data.r,
-        };
-    } else {
-        coords = origin_coords.unwrap();
-    }
+    let robot_coords;
+    let coords = match origin_coords {
+        None => {
+            robot_coords = robot.get_coords();
+            &robot_coords
+        }
+        Some(coords) => coords,
+    };
 
     let mut farthest: Option<Coords> = None;
     let mut farthest_distance = 0;

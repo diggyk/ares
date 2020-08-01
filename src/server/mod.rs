@@ -15,6 +15,8 @@ pub struct ServerConfig {
 
     // maximum number of valuables files
     max_valuables: usize,
+
+    debug: bool,
 }
 
 pub fn get_config() -> ServerConfig {
@@ -61,6 +63,11 @@ pub fn get_config() -> ServerConfig {
                 .takes_value(true)
                 .help("How many valuables piles to keep"),
         )
+        .arg(
+            Arg::with_name("debug")
+                .long("debug")
+                .help("Set to debug mode"),
+        )
         .get_matches();
 
     let dbuser = matches.value_of("dbuser").unwrap_or("ares").to_string();
@@ -92,6 +99,7 @@ pub fn get_config() -> ServerConfig {
         conn,
         max_bots,
         max_valuables,
+        debug: matches.is_present("debug"),
     }
 }
 
@@ -111,6 +119,8 @@ pub enum Request {
 /// For each server request, the server can respond to the robot
 #[derive(Clone, Debug, PartialEq)]
 pub enum Response {
+    AttackFailed,
+    AttackSuccess { target_id: i64, damage: i32 },
     Fail,
     Mined { valuable_id: i64, amount: i32 },
 }

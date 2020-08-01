@@ -19,7 +19,7 @@ pub enum CoordsKind {
 }
 
 #[repr(i16)]
-#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, AsExpression, FromSqlRow)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, AsExpression, FromSqlRow, PartialOrd)]
 #[sql_type = "SmallInt"]
 pub enum Dir {
     Orient0 = 0,
@@ -60,7 +60,14 @@ where
 
 impl From<i16> for Dir {
     fn from(item: i16) -> Dir {
-        match item {
+        let i = if item < 0 {
+            item + 360
+        } else if item > 300 {
+            item - 360
+        } else {
+            item
+        };
+        match i {
             0 => Dir::Orient0,
             60 => Dir::Orient60,
             120 => Dir::Orient120,
@@ -87,7 +94,14 @@ impl From<Dir> for i16 {
 
 impl From<i32> for Dir {
     fn from(item: i32) -> Dir {
-        match item {
+        let i = if item < 0 {
+            item + 360
+        } else if item > 300 {
+            item - 360
+        } else {
+            item
+        };
+        match i {
             0 => Dir::Orient0,
             60 => Dir::Orient60,
             120 => Dir::Orient120,

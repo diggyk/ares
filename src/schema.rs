@@ -61,6 +61,8 @@ table! {
         pursuit_last_r -> Int4,
         attacked_from -> Int4,
         attacked_by -> Int8,
+        attacked -> Int8,
+        damage_done -> Int4,
     }
 }
 

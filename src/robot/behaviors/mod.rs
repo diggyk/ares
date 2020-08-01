@@ -6,6 +6,28 @@ use crate::grid::*;
 use crate::robot::modules::weapon::WeaponModule;
 
 impl Robot {
+    /// Flee to the farthest point from the given coords
+    fn flee_from_coords(&self, threat_coords: &Coords) -> Option<ProcessResult> {
+        let flee_coords = traversal::find_farthest_coords(
+            self,
+            self.get_known_unoccupied_cells()
+                .keys()
+                .map(|c| c.clone())
+                .collect(),
+            true,
+            Some(threat_coords),
+        );
+
+        if flee_coords.is_some() {
+            return Some(ProcessResult::TransitionToFlee(
+                flee_coords.unwrap(),
+                self.data.orientation,
+            ));
+        } else {
+            None
+        }
+    }
+
     /// Check to see if we scanned some threats.  If so, transition to flee
     fn check_for_threats(&mut self, conn: Option<&PgConnection>) -> Option<ProcessResult> {
         let _threats: Vec<&VisibleRobot> = self
@@ -23,25 +45,13 @@ impl Robot {
         );
 
         if closest_threat_coords.is_some() {
-            let flee_coords = traversal::find_farthest_coords(
-                self,
-                self.get_known_unoccupied_cells()
-                    .keys()
-                    .map(|c| c.clone())
-                    .collect(),
-                true,
-                closest_threat_coords,
+            self.set_status_text(
+                conn,
+                &format!("Must flee from {:?}", closest_threat_coords.unwrap()),
             );
 
-            if flee_coords.is_some() {
-                self.set_status_text(
-                    conn,
-                    &format!("Must flee from {:?}", closest_threat_coords.unwrap()),
-                );
-                return Some(ProcessResult::TransitionToFlee(
-                    flee_coords.unwrap(),
-                    self.data.orientation,
-                ));
+            if let Some(response) = self.flee_from_coords(&closest_threat_coords.unwrap()) {
+                return Some(response);
             }
         }
 
@@ -101,5 +111,22 @@ impl Robot {
         }
 
         None
+    }
+
+    /// Respond to an attack
+    pub fn respond_to_attack(&mut self, conn: Option<&PgConnection>) -> Option<ProcessResult> {
+        // if I'm in battle already, then I'm not going to flee!
+        if self.is_pursuing() {
+            return None;
+        }
+
+        let attacker_dir: Dir = self.data.attacked_from.into();
+        let coords_toward_attacker = self.get_coords().to(&attacker_dir, 2);
+        self.set_status_text(
+            conn,
+            &format!("Running away from attacker at {:?}", attacker_dir),
+        );
+
+        return self.flee_from_coords(&coords_toward_attacker);
     }
 }
