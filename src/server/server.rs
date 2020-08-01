@@ -232,7 +232,9 @@ impl Server {
             return None;
         }
 
-        self.spawn_valuable(&coords, valuables);
+        if !self.config.no_kill_drops {
+            self.spawn_valuable(&coords, valuables);
+        }
 
         None
     }
@@ -333,6 +335,8 @@ impl Server {
     /// The main run loop for the ARES server.  Spawns robots if needed; tick all the robot
     pub fn run(&mut self) {
         let mut last_tick = SystemTime::now();
+
+        println!("Server config {}", self.config.no_kill_drops);
         while !self.shutdown {
             if self.config.debug {
                 self._wait_for_enter().expect("Not possible");

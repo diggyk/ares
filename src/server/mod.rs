@@ -16,6 +16,9 @@ pub struct ServerConfig {
     // maximum number of valuables files
     max_valuables: usize,
 
+    // do killed robots drop valuables
+    no_kill_drops: bool,
+
     debug: bool,
 }
 
@@ -64,6 +67,11 @@ pub fn get_config() -> ServerConfig {
                 .help("How many valuables piles to keep"),
         )
         .arg(
+            Arg::with_name("no_kill_drops")
+                .long("no_kill_drops")
+                .help("Kill will not drop valuables"),
+        )
+        .arg(
             Arg::with_name("debug")
                 .long("debug")
                 .help("Set to debug mode"),
@@ -99,6 +107,7 @@ pub fn get_config() -> ServerConfig {
         conn,
         max_bots,
         max_valuables,
+        no_kill_drops: matches.is_present("no_kill_drops"),
         debug: matches.is_present("debug"),
     }
 }
