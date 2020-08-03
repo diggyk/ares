@@ -6,11 +6,15 @@ use super::*;
 pub struct Exfil {}
 
 impl Process for Exfil {
-    fn run(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
-        robot.tick_exfil_countdown(Some(conn));
+    fn run(
+        conn: Option<&PgConnection>,
+        robot: &mut Robot,
+        _: Option<ProcessResult>,
+    ) -> ProcessResult {
+        robot.tick_exfil_countdown(conn);
 
         robot.set_status_text(
-            Some(conn),
+            conn,
             format!(
                 "I'm calling for exfiltration in ... {}",
                 robot.data.exfil_countdown,
@@ -19,7 +23,7 @@ impl Process for Exfil {
         );
 
         if robot.data.exfil_countdown == 0 {
-            robot.destroy(Some(conn));
+            robot.destroy(conn);
             ProcessResult::ServerRequest(Request::Exfiltrate {
                 robot_id: robot.data.id,
             })
@@ -28,10 +32,14 @@ impl Process for Exfil {
         }
     }
 
-    fn init(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
+    fn init(
+        conn: Option<&PgConnection>,
+        robot: &mut Robot,
+        _: Option<ProcessResult>,
+    ) -> ProcessResult {
         println!("Transition to Exfiltrate");
-        robot.set_status_text(Some(conn), "I'm calling for exfiltration.");
-        robot.start_exfil_countdown(Some(conn));
+        robot.set_status_text(conn, "I'm calling for exfiltration.");
+        robot.start_exfil_countdown(conn);
 
         return ProcessResult::Ok;
     }

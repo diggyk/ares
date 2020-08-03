@@ -101,8 +101,12 @@ pub struct Grid {
 }
 
 impl Grid {
-    pub fn load(conn: &PgConnection) -> Result<Grid, String> {
-        let results = gridcells::table.load::<GridCell>(conn);
+    pub fn load(conn: Option<&PgConnection>) -> Result<Grid, String> {
+        if conn.is_none() {
+            return Err("No DB connection given".to_string());
+        }
+
+        let results = gridcells::table.load::<GridCell>(conn.unwrap());
 
         if let Err(reason) = results {
             return Err(format!("{}", reason));

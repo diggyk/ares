@@ -10,13 +10,17 @@ pub struct Move {}
 /// The "Move" process involves a movement queue of moves
 impl Process for Move {
     /// Main run of the Neutral process
-    fn run(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
+    fn run(
+        conn: Option<&PgConnection>,
+        robot: &mut Robot,
+        _: Option<ProcessResult>,
+    ) -> ProcessResult {
         // make sure we have enough power to run the scanner
         let power_need = drivesystem::DriveSystemModule::get_power_usage(&robot.modules.m_power);
         if robot.data.power < power_need {
             return ProcessResult::OutOfPower;
         }
-        robot.use_power(Some(conn), power_need);
+        robot.use_power(conn, power_need);
 
         // Take the next move based on the drive system
         if let ProcessResult::Fail = robot.move_robot(conn) {
@@ -32,7 +36,7 @@ impl Process for Move {
             return ProcessResult::OutOfPower;
         }
 
-        if let Some(response) = robot.respond_to_others(Some(conn)) {
+        if let Some(response) = robot.respond_to_others(conn) {
             return response;
         }
 
@@ -46,7 +50,7 @@ impl Process for Move {
     }
 
     fn init(
-        conn: &PgConnection,
+        conn: Option<&PgConnection>,
         robot: &mut Robot,
         message: Option<ProcessResult>,
     ) -> ProcessResult {
@@ -77,10 +81,7 @@ impl Process for Move {
                     "Robot {}: Move to {:?}, {:?}, {:?}",
                     robot.data.id, &target_coords, &orientation, spin
                 );
-                robot.set_status_text(
-                    Some(conn),
-                    format!("I'm moving to {},{}.", tc.q, tc.r).as_str(),
-                );
+                robot.set_status_text(conn, format!("I'm moving to {},{}.", tc.q, tc.r).as_str());
             }
             ProcessResult::TransitionToFlee(tc, o) => {
                 target_coords = tc;
@@ -90,10 +91,7 @@ impl Process for Move {
                     "Robot {}: Flee to {:?}, {:?}, {:?}",
                     robot.data.id, &target_coords, &orientation, spin
                 );
-                robot.set_status_text(
-                    Some(conn),
-                    format!("I'm fleeing to {},{}!", tc.q, tc.r).as_str(),
-                );
+                robot.set_status_text(conn, format!("I'm fleeing to {},{}!", tc.q, tc.r).as_str());
             }
             _ => return ProcessResult::Fail,
         }

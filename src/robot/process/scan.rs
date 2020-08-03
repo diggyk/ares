@@ -39,7 +39,11 @@ pub struct ScanResults {
 pub struct Scan {}
 
 impl Process for Scan {
-    fn run(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
+    fn run(
+        conn: Option<&PgConnection>,
+        robot: &mut Robot,
+        _: Option<ProcessResult>,
+    ) -> ProcessResult {
         let mut rng = rand::thread_rng();
 
         // make sure we have enough power to run the scanner
@@ -47,7 +51,7 @@ impl Process for Scan {
         if robot.data.power < power_need {
             return ProcessResult::OutOfPower;
         }
-        robot.use_power(Some(conn), power_need);
+        robot.use_power(conn, power_need);
 
         let our_coords = Coords {
             q: robot.data.q,
@@ -163,7 +167,7 @@ impl Process for Scan {
     }
 
     // transition
-    fn init(_: &PgConnection, _: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
+    fn init(_: Option<&PgConnection>, _: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
         ProcessResult::Ok
     }
 }

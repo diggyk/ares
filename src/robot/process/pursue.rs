@@ -10,7 +10,7 @@ pub struct Pursue {}
 
 impl Process for Pursue {
     fn init(
-        conn: &PgConnection,
+        conn: Option<&PgConnection>,
         robot: &mut Robot,
         message: Option<ProcessResult>,
     ) -> ProcessResult {
@@ -30,7 +30,7 @@ impl Process for Pursue {
             ProcessResult::TransitionToPursue(id) => {
                 target_id = id;
                 println!("Robot {}: Pursue Robot {}", robot.data.id, id);
-                robot.set_status_text(Some(conn), &format!("I'm pursuing Robot {}.", id));
+                robot.set_status_text(conn, &format!("I'm pursuing Robot {}.", id));
             }
             _ => return ProcessResult::Fail,
         }
@@ -56,13 +56,17 @@ impl Process for Pursue {
             }
         }
 
-        robot.update_pursuit_details(Some(conn), target_id, &target_coords.unwrap());
+        robot.update_pursuit_details(conn, target_id, &target_coords.unwrap());
 
         ProcessResult::Ok
     }
 
     /// Main run of the Pursue process
-    fn run(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
+    fn run(
+        conn: Option<&PgConnection>,
+        robot: &mut Robot,
+        _: Option<ProcessResult>,
+    ) -> ProcessResult {
         let robot_coords = Coords {
             q: robot.data.q,
             r: robot.data.r,
@@ -86,7 +90,7 @@ impl Process for Pursue {
         if robot.data.power < power_need {
             return ProcessResult::OutOfPower;
         }
-        robot.use_power(Some(conn), power_need);
+        robot.use_power(conn, power_need);
 
         // try to move but don't care if we fail (we might be right next to the target)
         robot.move_robot(conn);
@@ -117,7 +121,7 @@ impl Process for Pursue {
         }
 
         // we still see the target so update our info on the target
-        robot.update_pursuit_details(Some(conn), robot.data.pursuit_id, &latest_coords.unwrap());
+        robot.update_pursuit_details(conn, robot.data.pursuit_id, &latest_coords.unwrap());
 
         let in_range = WeaponModule::in_range(
             &robot.modules.m_weapons,

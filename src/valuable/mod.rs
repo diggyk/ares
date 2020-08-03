@@ -55,10 +55,14 @@ impl Valuable {
     }
 
     /// Load all the robots out of the database
-    pub fn load_all(conn: &PgConnection) -> HashMap<i64, Valuable> {
+    pub fn load_all(conn: Option<&PgConnection>) -> Result<HashMap<i64, Valuable>, String> {
+        if conn.is_none() {
+            return Err("No DB connection".to_string());
+        }
+
         let mut _valuables = HashMap::new();
         let results = valuables::table
-            .load::<Valuable>(conn)
+            .load::<Valuable>(conn.unwrap())
             .expect("Failed to load robots");
 
         for result in results {
@@ -67,10 +71,11 @@ impl Valuable {
             _valuables.insert(id, result);
         }
 
-        _valuables
+        Ok(_valuables)
     }
 
-    fn update_in_db(&mut self, conn: &PgConnection) {
+    /// persist current values to the db
+    fn persist_to_db(&mut self, conn: &PgConnection) {
         // update the db
         let _ = diesel::update(valuables::table.filter(valuables::id.eq(self.id)))
             .set(valuables::amount.eq(self.amount))
@@ -78,17 +83,19 @@ impl Valuable {
     }
 
     /// Increase in value
-    pub fn add_to_amount(&mut self, conn: &PgConnection, amount: i32) {
+    pub fn add_to_amount(&mut self, conn: Option<&PgConnection>, amount: i32) {
         self.amount += amount;
         if self.amount > MAX_AMOUNT {
             self.amount = MAX_AMOUNT;
         }
 
-        self.update_in_db(conn);
+        if conn.is_some() {
+            self.persist_to_db(conn.unwrap());
+        }
     }
 
     /// Attempt to mine a certain amount
-    pub fn mine(&mut self, conn: &PgConnection, amount: i32) -> i32 {
+    pub fn mine(&mut self, conn: Option<&PgConnection>, amount: i32) -> i32 {
         let mined_amount: i32;
 
         if self.amount < amount {
@@ -99,15 +106,20 @@ impl Valuable {
             self.amount -= mined_amount;
         }
 
-        self.update_in_db(conn);
+        if conn.is_some() {
+            self.persist_to_db(conn.unwrap());
+        }
 
         mined_amount
     }
 
     /// Delete self
-    pub fn destroy(&mut self, conn: &PgConnection) -> bool {
+    pub fn destroy(&mut self, conn: Option<&PgConnection>) -> bool {
         println!("Valuable {}: Destroy", self.id);
-        let _ = diesel::delete(valuables::table.filter(valuables::id.eq(self.id))).execute(conn);
+        if conn.is_some() {
+            let _ = diesel::delete(valuables::table.filter(valuables::id.eq(self.id)))
+                .execute(conn.unwrap());
+        }
 
         true
     }

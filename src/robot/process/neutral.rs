@@ -12,7 +12,11 @@ pub struct Neutral {}
 /// The "Neutral" process is when there is no active fleeing, mining, or exploring going on
 impl Process for Neutral {
     /// Main run of the Neutral process
-    fn run(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
+    fn run(
+        conn: Option<&PgConnection>,
+        robot: &mut Robot,
+        _: Option<ProcessResult>,
+    ) -> ProcessResult {
         // see if it is time to exfiltrate
         let max_val_inventory =
             CollectorModule::get_collection_max(robot.modules.m_collector.as_str());
@@ -39,7 +43,7 @@ impl Process for Neutral {
             return ProcessResult::OutOfPower;
         }
 
-        if let Some(response) = robot.respond_to_others(Some(conn)) {
+        if let Some(response) = robot.respond_to_others(conn) {
             return response;
         }
 
@@ -76,10 +80,14 @@ impl Process for Neutral {
     }
 
     // initialize this process; clear any previous persuit details
-    fn init(conn: &PgConnection, robot: &mut Robot, _: Option<ProcessResult>) -> ProcessResult {
+    fn init(
+        conn: Option<&PgConnection>,
+        robot: &mut Robot,
+        _: Option<ProcessResult>,
+    ) -> ProcessResult {
         println!("Robot {}: Transition to Neutral", robot.data.id);
-        robot.set_status_text(Some(conn), "I'm idle.");
-        robot.update_pursuit_details(Some(conn), -1, &robot.get_coords());
+        robot.set_status_text(conn, "I'm idle.");
+        robot.update_pursuit_details(conn, -1, &robot.get_coords());
         ProcessResult::Ok
     }
 }

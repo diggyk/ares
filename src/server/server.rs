@@ -27,23 +27,34 @@ pub struct Server {
 /// The ARES Server
 impl Server {
     /// Create a new server; load all data from the DB
-    pub fn new(config: ServerConfig) -> Server {
+    pub fn new(config: ServerConfig) -> Self {
         let grid = Arc::new(Mutex::new(
-            Grid::load(&config.conn).expect("Failed to load grid"),
+            Grid::load(config.conn.as_ref()).expect("Failed to load grid"),
         ));
         println!(
             "Loaded grid with {} cells",
             grid.lock().unwrap().cells.len()
         );
 
-        let robots: HashMap<i64, Robot> = Robot::load_all(&config.conn, grid.clone());
+        let mut robots: HashMap<i64, Robot> =
+            match Robot::load_all(config.conn.as_ref(), grid.clone()) {
+                Ok(robots) => robots,
+                Err(_) => HashMap::new(),
+            };
+
+        if let Ok(loaded_robots) = Robot::load_all(config.conn.as_ref(), grid.clone()) {
+            robots = loaded_robots;
+        }
         println!("Loaded {} active robots", robots.len());
 
         for (_, robot) in &robots {
             grid.lock().unwrap().add_robot(robot);
         }
 
-        let valuables: HashMap<i64, Valuable> = Valuable::load_all(&config.conn);
+        let valuables: HashMap<i64, Valuable> = match Valuable::load_all(config.conn.as_ref()) {
+            Ok(valuables) => valuables,
+            Err(_) => HashMap::new(),
+        };
         let mut valuables_locs: HashMap<Coords, i64> = HashMap::new();
         for (id, valuable) in &valuables {
             valuables_locs.insert(
@@ -107,7 +118,7 @@ impl Server {
         let robot = Robot::new(
             coords.clone(),
             orientation,
-            Some(&self.config.conn),
+            self.config.conn.as_ref(),
             self.grid.clone(),
             Some(modules),
         );
@@ -123,10 +134,12 @@ impl Server {
         if let Some(valuable_id) = grid.valuables_locs.get(coords) {
             let valuable = self.valuables.get_mut(valuable_id);
             if valuable.is_some() {
-                valuable.unwrap().add_to_amount(&self.config.conn, amount);
+                valuable
+                    .unwrap()
+                    .add_to_amount(self.config.conn.as_ref(), amount);
             }
         } else {
-            let valuable = Valuable::new(coords.clone(), amount, Some(&self.config.conn));
+            let valuable = Valuable::new(coords.clone(), amount, self.config.conn.as_ref());
             grid.valuables_locs.insert(coords.clone(), valuable.id);
             self.valuables.insert(valuable.id, valuable);
         }
@@ -150,7 +163,7 @@ impl Server {
         let mut deleted_valuables: Vec<(Coords, i64)> = Vec::new();
         for (id, valuable) in &mut self.valuables {
             if valuable.amount == 0 {
-                if valuable.destroy(&self.config.conn) == true {
+                if valuable.destroy(self.config.conn.as_ref()) == true {
                     deleted_valuables.push((
                         Coords {
                             q: valuable.q,
@@ -195,7 +208,7 @@ impl Server {
             return Some(Response::Fail);
         }
 
-        let mined_amount = valuable.unwrap().mine(&self.config.conn, amount);
+        let mined_amount = valuable.unwrap().mine(self.config.conn.as_ref(), amount);
 
         Some(Response::Mined {
             valuable_id,
@@ -276,9 +289,9 @@ impl Server {
         target
             .as_mut()
             .unwrap()
-            .update_hull_strength(Some(&self.config.conn), -1 * damage);
+            .update_hull_strength(self.config.conn.as_ref(), -1 * damage);
         target.as_mut().unwrap().record_attack(
-            Some(&self.config.conn),
+            self.config.conn.as_ref(),
             *attacker_id,
             attack_dir.unwrap(),
         );
@@ -315,7 +328,7 @@ impl Server {
 
         let _robot = robot.unwrap();
 
-        let server_request = _robot.tick(&self.config.conn);
+        let server_request = _robot.tick(self.config.conn.as_ref());
 
         let server_request = if server_request.is_some() {
             server_request.unwrap()
@@ -328,7 +341,7 @@ impl Server {
             let robot = self.robots.get_mut(robot_id);
             robot
                 .unwrap()
-                .handle_server_response(Some(&self.config.conn), server_response.unwrap());
+                .handle_server_response(self.config.conn.as_ref(), server_response.unwrap());
         }
     }
 

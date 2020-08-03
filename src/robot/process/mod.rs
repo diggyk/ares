@@ -65,10 +65,14 @@ pub enum Processes {
 
 /// Trait to define a process
 pub trait Process {
-    fn run(conn: &PgConnection, robot: &mut Robot, message: Option<ProcessResult>)
-        -> ProcessResult;
+    fn run(
+        conn: Option<&PgConnection>,
+        robot: &mut Robot,
+        message: Option<ProcessResult>,
+    ) -> ProcessResult;
+
     fn init(
-        conn: &PgConnection,
+        conn: Option<&PgConnection>,
         robot: &mut Robot,
         message: Option<ProcessResult>,
     ) -> ProcessResult;

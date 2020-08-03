@@ -8,7 +8,7 @@ use crate::db::*;
 
 pub struct ServerConfig {
     pub dbconfig: DbConfig,
-    pub conn: PgConnection,
+    pub conn: Option<PgConnection>,
 
     // maximum number of robots to spawn
     max_bots: usize,
@@ -104,7 +104,7 @@ pub fn get_config() -> ServerConfig {
 
     ServerConfig {
         dbconfig,
-        conn,
+        conn: Some(conn),
         max_bots,
         max_valuables,
         no_kill_drops: matches.is_present("no_kill_drops"),
