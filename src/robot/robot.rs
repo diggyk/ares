@@ -20,7 +20,7 @@ pub struct NewRobot {
     pub orientation: Dir,
 }
 
-#[derive(Debug, Queryable, Identifiable, Insertable)]
+#[derive(Clone, Debug, Queryable, Identifiable, Insertable)]
 #[table_name = "robots"]
 pub struct RobotData {
     pub id: i64,

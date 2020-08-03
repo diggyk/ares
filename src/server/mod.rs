@@ -1,8 +1,12 @@
 use clap::{App, Arg};
 use diesel::pg::PgConnection;
 
+pub mod broadcast;
 pub mod server;
+pub mod ws;
+
 pub use server::Server;
+pub use ws::WebsocketServer;
 
 use crate::db::*;
 

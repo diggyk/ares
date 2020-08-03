@@ -1,9 +1,11 @@
 use rand::Rng;
 use std::collections::HashMap;
 use std::io::Read;
-use std::sync::{Arc, Mutex};
+use std::sync::{mpsc, Arc, Mutex};
+use std::thread;
 use std::time::{Duration, SystemTime};
 
+use super::broadcast::BroadcastMessage;
 use super::*;
 use crate::grid::Coords;
 use crate::grid::Dir;
@@ -19,6 +21,10 @@ pub struct Server {
     grid: Arc<Mutex<Grid>>,
     robots: HashMap<i64, Robot>,
     valuables: HashMap<i64, Valuable>,
+
+    /// our transmitter to the websocket server
+    tx: mpsc::Sender<BroadcastMessage>,
+    rx: Arc<Mutex<mpsc::Receiver<BroadcastMessage>>>,
 
     /// if true, we've been asked to shutdown
     shutdown: bool,
@@ -68,11 +74,15 @@ impl Server {
 
         grid.lock().unwrap().valuables_locs = valuables_locs;
 
+        let (tx, rx) = mpsc::channel::<BroadcastMessage>();
+
         Server {
             config,
             grid,
             robots,
             valuables,
+            tx,
+            rx: Arc::new(Mutex::new(rx)),
             shutdown: false,
         }
     }
@@ -349,6 +359,13 @@ impl Server {
     pub fn run(&mut self) {
         let mut last_tick = SystemTime::now();
 
+        let mut ws = WebsocketServer {
+            rx: self.rx.clone(),
+        };
+        thread::spawn(move || {
+            ws.run();
+        });
+
         println!("Server config {}", self.config.no_kill_drops);
         while !self.shutdown {
             if self.config.debug {
@@ -369,6 +386,11 @@ impl Server {
             let robot_ids: Vec<i64> = self.robots.keys().map(|k| k.clone()).collect();
             for id in robot_ids {
                 self.tick_robot(&id);
+                if let Err(err) = self.tx.send(BroadcastMessage::RobotMoved {
+                    robot: self.robots.get(&id).unwrap().data.clone(),
+                }) {
+                    println!("Error: {:?}", err);
+                }
             }
 
             self.destroy_depleted_valuables();
