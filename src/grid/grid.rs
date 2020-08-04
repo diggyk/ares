@@ -1,6 +1,7 @@
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use rand::Rng;
+use serde::Serialize;
 use std::collections::HashMap;
 
 use super::coords::*;
@@ -8,7 +9,7 @@ use super::edge::EdgeType;
 use crate::robot::*;
 use crate::schema::*;
 
-#[derive(Clone, Copy, Debug, Queryable, Insertable)]
+#[derive(Clone, Copy, Debug, Queryable, Insertable, Serialize)]
 #[table_name = "gridcells"]
 pub struct GridCell {
     pub id: i32,

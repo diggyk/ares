@@ -111,7 +111,7 @@ impl PartialOrd for RobotKnownCell {
 }
 
 /// Represents the modules loaded for this robot
-#[derive(Clone, Debug, Queryable, Identifiable, Insertable, PartialEq)]
+#[derive(Clone, Debug, Queryable, Identifiable, Insertable, PartialEq, Serialize)]
 #[table_name = "robot_modules"]
 #[primary_key(robot_id)]
 pub struct RobotModules {

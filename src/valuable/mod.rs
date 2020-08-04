@@ -1,5 +1,6 @@
 use diesel::prelude::*;
 use diesel::PgConnection;
+use serde::Serialize;
 use std::collections::HashMap;
 
 use crate::grid::Coords;
@@ -16,7 +17,7 @@ pub struct NewValuable {
     pub amount: i32,
 }
 
-#[derive(Debug, Queryable, Identifiable, Insertable)]
+#[derive(Clone, Debug, Queryable, Identifiable, Insertable, Serialize)]
 #[table_name = "valuables"]
 pub struct Valuable {
     pub id: i64,

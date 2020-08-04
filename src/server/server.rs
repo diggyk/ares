@@ -7,11 +7,9 @@ use std::time::{Duration, SystemTime};
 
 use super::broadcast::BroadcastMessage;
 use super::*;
-use crate::grid::Coords;
-use crate::grid::Dir;
-use crate::grid::Grid;
+use crate::grid::{Coords, Dir, Grid, GridCell};
 use crate::robot::modules::*;
-use crate::robot::Robot;
+use crate::robot::{Robot, RobotData, RobotModules};
 use crate::utils;
 use crate::valuable::*;
 
@@ -23,8 +21,10 @@ pub struct Server {
     valuables: HashMap<i64, Valuable>,
 
     /// our transmitter to the websocket server
-    tx: mpsc::Sender<BroadcastMessage>,
-    rx: Arc<Mutex<mpsc::Receiver<BroadcastMessage>>>,
+    out_tx: mpsc::Sender<BroadcastMessage>,
+    out_rx: Arc<Mutex<mpsc::Receiver<BroadcastMessage>>>,
+    in_tx: Arc<Mutex<mpsc::Sender<usize>>>,
+    in_rx: mpsc::Receiver<usize>,
 
     /// if true, we've been asked to shutdown
     shutdown: bool,
@@ -74,15 +74,18 @@ impl Server {
 
         grid.lock().unwrap().valuables_locs = valuables_locs;
 
-        let (tx, rx) = mpsc::channel::<BroadcastMessage>();
+        let (out_tx, out_rx) = mpsc::channel::<BroadcastMessage>();
+        let (in_tx, in_rx) = mpsc::channel::<usize>();
 
         Server {
             config,
             grid,
             robots,
             valuables,
-            tx,
-            rx: Arc::new(Mutex::new(rx)),
+            out_tx,
+            out_rx: Arc::new(Mutex::new(out_rx)),
+            in_tx: Arc::new(Mutex::new(in_tx)),
+            in_rx,
             shutdown: false,
         }
     }
@@ -359,7 +362,7 @@ impl Server {
     pub fn run(&mut self) {
         let mut last_tick = SystemTime::now();
 
-        let mut ws = WebsocketServer::new(self.rx.clone());
+        let mut ws = WebsocketServer::new(self.out_rx.clone(), self.in_tx.clone());
 
         thread::spawn(move || {
             ws.run();
@@ -388,7 +391,7 @@ impl Server {
                 if let Some(robot) = self.robots.get(&id) {
                     let robot_data = robot.data.clone();
                     if let Err(err) = self
-                        .tx
+                        .out_tx
                         .send(BroadcastMessage::RobotMoved { robot: robot_data })
                     {
                         println!("Error: {:?}", err);
@@ -397,6 +400,30 @@ impl Server {
             }
 
             self.destroy_depleted_valuables();
+
+            if let Ok(client_id) = self.in_rx.try_recv() {
+                println!("Message from webserver: {:?}", client_id);
+                let cells: Vec<GridCell> = self
+                    .grid
+                    .lock()
+                    .unwrap()
+                    .cells
+                    .values()
+                    .map(|g| g.clone())
+                    .collect();
+                let robots: Vec<RobotData> = self.robots.values().map(|r| r.data.clone()).collect();
+                let robot_modules: Vec<RobotModules> =
+                    self.robots.values().map(|r| r.modules.clone()).collect();
+                let valuables: Vec<Valuable> = self.valuables.values().map(|v| v.clone()).collect();
+
+                let _ = self.out_tx.send(BroadcastMessage::InitializerData {
+                    id: client_id,
+                    cells,
+                    robots,
+                    robot_modules,
+                    valuables,
+                });
+            }
 
             // Wait for remainer of the tick time
             if let Ok(elapse) = last_tick.elapsed() {
