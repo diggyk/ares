@@ -1,5 +1,6 @@
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
@@ -20,7 +21,7 @@ pub struct NewRobot {
     pub orientation: Dir,
 }
 
-#[derive(Clone, Debug, Queryable, Identifiable, Insertable)]
+#[derive(Clone, Debug, Queryable, Identifiable, Insertable, Serialize)]
 #[table_name = "robots"]
 pub struct RobotData {
     pub id: i64,

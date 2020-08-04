@@ -3,6 +3,7 @@ use diesel::deserialize::{FromSql, Result};
 use diesel::serialize::{self, Output, ToSql};
 use diesel::sql_types::*;
 use rand::seq::SliceRandom;
+use serde::Serialize;
 use std::io::Write;
 
 use rand::{
@@ -19,7 +20,9 @@ pub enum CoordsKind {
 }
 
 #[repr(i16)]
-#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, AsExpression, FromSqlRow, PartialOrd)]
+#[derive(
+    Copy, Clone, Debug, Hash, PartialEq, Eq, AsExpression, FromSqlRow, PartialOrd, Serialize,
+)]
 #[sql_type = "SmallInt"]
 pub enum Dir {
     Orient0 = 0,

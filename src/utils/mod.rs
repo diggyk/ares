@@ -36,7 +36,6 @@ pub fn get_angle(x1: f64, y1: f64) -> f64 {
         ang1.abs()
     // positive, negative
     } else if (x1 > 0.0) && (y1 < 0.0) {
-        println!("{}", ang1);
         ang1 + 180.0
     // negative, negative
     } else if (x1 < 0.0) && (y1 < 0.0) {

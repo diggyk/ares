@@ -129,7 +129,6 @@ impl Process for Pursue {
             &robot.data.orientation,
             &latest_coords.unwrap(),
         );
-        println!("Robot {}: In range? {}", robot.data.id, in_range);
         if in_range {
             return ProcessResult::ServerRequest(Request::Attack {
                 target_id: robot.data.pursuit_id,

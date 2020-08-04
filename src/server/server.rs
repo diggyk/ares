@@ -359,9 +359,8 @@ impl Server {
     pub fn run(&mut self) {
         let mut last_tick = SystemTime::now();
 
-        let mut ws = WebsocketServer {
-            rx: self.rx.clone(),
-        };
+        let mut ws = WebsocketServer::new(self.rx.clone());
+
         thread::spawn(move || {
             ws.run();
         });
@@ -386,10 +385,14 @@ impl Server {
             let robot_ids: Vec<i64> = self.robots.keys().map(|k| k.clone()).collect();
             for id in robot_ids {
                 self.tick_robot(&id);
-                if let Err(err) = self.tx.send(BroadcastMessage::RobotMoved {
-                    robot: self.robots.get(&id).unwrap().data.clone(),
-                }) {
-                    println!("Error: {:?}", err);
+                if let Some(robot) = self.robots.get(&id) {
+                    let robot_data = robot.data.clone();
+                    if let Err(err) = self
+                        .tx
+                        .send(BroadcastMessage::RobotMoved { robot: robot_data })
+                    {
+                        println!("Error: {:?}", err);
+                    }
                 }
             }
 
