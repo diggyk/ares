@@ -191,7 +191,7 @@ impl RobotModules {
     }
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Robot {
     #[serde(skip_serializing)]
     pub grid: Arc<Mutex<Grid>>,

@@ -1,7 +1,7 @@
 use serde::Serialize;
 
 use crate::grid::GridCell;
-use crate::robot::RobotData;
+use crate::robot::{Robot, RobotData};
 use crate::valuable::Valuable;
 
 /// Broadcast message of updates to the world

@@ -9,7 +9,7 @@ use super::broadcast::BroadcastMessage;
 use super::*;
 use crate::grid::{Coords, Dir, Grid, GridCell};
 use crate::robot::modules::*;
-use crate::robot::{Robot, RobotData, RobotInfo, RobotModules};
+use crate::robot::{Robot, RobotData, RobotModules};
 use crate::utils;
 use crate::valuable::*;
 
