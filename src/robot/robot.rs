@@ -1,5 +1,6 @@
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
+use serde;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -190,33 +191,30 @@ impl RobotModules {
     }
 }
 
-/// Special struct just for the serializable bits to send to clients
-#[derive(Debug, Serialize)]
-pub struct RobotInfo {
-    data: RobotData,
-    modules: RobotModules,
-}
-
+#[derive(Clone, Serialize)]
 pub struct Robot {
+    #[serde(skip_serializing)]
     pub grid: Arc<Mutex<Grid>>,
+
+    #[serde(flatten)]
     pub data: RobotData,
+
+    #[serde(skip_serializing)]
     pub known_cells: Vec<RobotKnownCell>,
+
+    #[serde(skip_serializing)]
     pub visible_others: Vec<VisibleRobot>,
+
+    #[serde(skip_serializing)]
     pub visible_valuables: Vec<VisibleValuable>,
 
     pub active_process: Option<Processes>,
+
+    #[serde(skip_serializing)]
     pub movement_queue: Option<Vec<MoveStep>>,
 
+    #[serde(flatten)]
     pub modules: RobotModules,
-}
-
-impl From<&Robot> for RobotInfo {
-    fn from(item: &Robot) -> RobotInfo {
-        RobotInfo {
-            data: item.data.clone(),
-            modules: item.modules.clone(),
-        }
-    }
 }
 
 impl Robot {

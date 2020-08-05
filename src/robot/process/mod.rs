@@ -1,4 +1,5 @@
 use diesel::PgConnection;
+use serde::Serialize;
 
 mod collect;
 mod exfil;
@@ -52,7 +53,7 @@ pub enum ProcessResult {
 }
 
 /// List of all the processes with helpers to run the process
-#[derive(Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum Processes {
     Collect,
     Exfil,

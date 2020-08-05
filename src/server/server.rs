@@ -412,7 +412,7 @@ impl Server {
                     .values()
                     .map(|g| g.clone())
                     .collect();
-                let robots: Vec<RobotInfo> = self.robots.values().map(|r| r.into()).collect();
+                let robots: Vec<Robot> = self.robots.values().map(|r| r.clone()).collect();
                 let valuables: Vec<Valuable> = self.valuables.values().map(|v| v.clone()).collect();
 
                 let _ = self.out_tx.send(BroadcastMessage::InitializerData {

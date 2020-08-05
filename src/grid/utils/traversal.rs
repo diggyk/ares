@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::grid::*;
 use crate::robot::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum MoveStep {
     Forward,
     Left,
