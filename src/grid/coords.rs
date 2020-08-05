@@ -3,7 +3,6 @@ use diesel::deserialize::{FromSql, Result};
 use diesel::serialize::{self, Output, ToSql};
 use diesel::sql_types::*;
 use rand::seq::SliceRandom;
-use serde::Serialize;
 use serde_repr;
 use std::io::Write;
 

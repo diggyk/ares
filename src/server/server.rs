@@ -9,7 +9,7 @@ use super::broadcast::BroadcastMessage;
 use super::*;
 use crate::grid::{Coords, Dir, Grid, GridCell};
 use crate::robot::modules::*;
-use crate::robot::{Robot, RobotData, RobotModules};
+use crate::robot::Robot;
 use crate::utils;
 use crate::valuable::*;
 
@@ -138,6 +138,10 @@ impl Server {
 
         grid.add_robot(&robot);
 
+        let _ = self.out_tx.send(BroadcastMessage::RobotSpawned {
+            robot: robot.clone(),
+        });
+
         self.robots.insert(robot.data.id, robot);
     }
 
@@ -147,13 +151,20 @@ impl Server {
         if let Some(valuable_id) = grid.valuables_locs.get(coords) {
             let valuable = self.valuables.get_mut(valuable_id);
             if valuable.is_some() {
-                valuable
-                    .unwrap()
-                    .add_to_amount(self.config.conn.as_ref(), amount);
+                let valuable = valuable.unwrap();
+                valuable.add_to_amount(self.config.conn.as_ref(), amount);
+
+                let _ = self.out_tx.send(BroadcastMessage::ValuableUpdated {
+                    valuable: valuable.clone(),
+                });
             }
         } else {
             let valuable = Valuable::new(coords.clone(), amount, self.config.conn.as_ref());
             grid.valuables_locs.insert(coords.clone(), valuable.id);
+
+            let _ = self.out_tx.send(BroadcastMessage::ValuableCreated {
+                valuable: valuable.clone(),
+            });
             self.valuables.insert(valuable.id, valuable);
         }
     }
@@ -196,6 +207,10 @@ impl Server {
                 .unwrap()
                 .remove_valuable_by_loc(&valuable.0);
             self.valuables.remove(&valuable.1);
+
+            let _ = self.out_tx.send(BroadcastMessage::ValuableDepleted {
+                valuable_id: valuable.1,
+            });
         }
     }
 
@@ -230,18 +245,22 @@ impl Server {
     }
 
     /// Exfiltrate the robot by removing it from the grid and our own list of robots
-    fn exfiltrate_robot(&mut self, robot_id: &i64) -> Option<Response> {
+    fn handle_exfiltrate_request(&mut self, robot_id: &i64) -> Option<Response> {
         let mut grid = self.grid.lock().unwrap();
         grid.remove_robot_by_id(robot_id);
 
         self.robots.remove(robot_id);
+
+        let _ = self.out_tx.send(BroadcastMessage::RobotExfiltrated {
+            robot_id: *robot_id,
+        });
 
         None
     }
 
     /// Explode the robot by removing it from the grid and our own list of robots
     /// and creating a valuable at its location
-    fn explode(&mut self, robot_id: &i64, valuables: i32) -> Option<Response> {
+    fn handle_robot_explosion(&mut self, robot_id: &i64, valuables: i32) -> Option<Response> {
         let mut grid = self.grid.lock().unwrap();
         grid.remove_robot_by_id(robot_id);
         drop(grid);
@@ -258,6 +277,10 @@ impl Server {
             return None;
         }
 
+        let _ = self.out_tx.send(BroadcastMessage::RobotDestroyed {
+            robot_id: *robot_id,
+        });
+
         if !self.config.no_kill_drops {
             self.spawn_valuable(&coords, valuables);
         }
@@ -265,7 +288,8 @@ impl Server {
         None
     }
 
-    fn attack_robot(&mut self, attacker_id: &i64, target_id: &i64) -> Option<Response> {
+    /// Handle a robot attack request
+    fn handle_attack_request(&mut self, attacker_id: &i64, target_id: &i64) -> Option<Response> {
         let mut rng = rand::thread_rng();
 
         let attacker = &self.robots.get(attacker_id);
@@ -309,6 +333,12 @@ impl Server {
             attack_dir.unwrap(),
         );
 
+        // TODO error handling?
+        let _ = self.out_tx.send(BroadcastMessage::RobotAttacked {
+            attacker_id: *attacker_id,
+            target_id: *target_id,
+        });
+
         Some(Response::AttackSuccess {
             target_id: *target_id,
             damage,
@@ -321,9 +351,9 @@ impl Server {
     /// mining or shooting at others
     fn handle_request_for_robot(&mut self, robot_id: &i64, request: Request) -> Option<Response> {
         match request {
-            Request::Attack { target_id } => self.attack_robot(&robot_id, &target_id),
-            Request::Exfiltrate { robot_id } => self.exfiltrate_robot(&robot_id),
-            Request::Explode { valuables } => self.explode(&robot_id, valuables),
+            Request::Attack { target_id } => self.handle_attack_request(&robot_id, &target_id),
+            Request::Exfiltrate { robot_id } => self.handle_exfiltrate_request(&robot_id),
+            Request::Explode { valuables } => self.handle_robot_explosion(&robot_id, valuables),
             Request::Mine {
                 valuable_id,
                 amount,
@@ -358,6 +388,28 @@ impl Server {
         }
     }
 
+    /// Send initial data for a specified new client
+    fn send_initializer_data(&self, client_id: usize) {
+        println!("Send initial data to Listener {:?}", client_id);
+        let cells: Vec<GridCell> = self
+            .grid
+            .lock()
+            .unwrap()
+            .cells
+            .values()
+            .map(|g| g.clone())
+            .collect();
+        let robots: Vec<Robot> = self.robots.values().map(|r| r.clone()).collect();
+        let valuables: Vec<Valuable> = self.valuables.values().map(|v| v.clone()).collect();
+
+        let _ = self.out_tx.send(BroadcastMessage::InitializerData {
+            id: client_id,
+            cells,
+            robots,
+            valuables,
+        });
+    }
+
     /// The main run loop for the ARES server.  Spawns robots if needed; tick all the robot
     pub fn run(&mut self) {
         let mut last_tick = SystemTime::now();
@@ -389,11 +441,9 @@ impl Server {
             for id in robot_ids {
                 self.tick_robot(&id);
                 if let Some(robot) = self.robots.get(&id) {
-                    let robot_data = robot.data.clone();
-                    if let Err(err) = self
-                        .out_tx
-                        .send(BroadcastMessage::RobotMoved { robot: robot_data })
-                    {
+                    if let Err(err) = self.out_tx.send(BroadcastMessage::RobotMoved {
+                        robot: robot.clone(),
+                    }) {
                         println!("Error: {:?}", err);
                     }
                 }
@@ -403,24 +453,7 @@ impl Server {
 
             // Send initializer data to all new clients
             while let Ok(client_id) = self.in_rx.try_recv() {
-                println!("Send initial data to Listener {:?}", client_id);
-                let cells: Vec<GridCell> = self
-                    .grid
-                    .lock()
-                    .unwrap()
-                    .cells
-                    .values()
-                    .map(|g| g.clone())
-                    .collect();
-                let robots: Vec<Robot> = self.robots.values().map(|r| r.clone()).collect();
-                let valuables: Vec<Valuable> = self.valuables.values().map(|v| v.clone()).collect();
-
-                let _ = self.out_tx.send(BroadcastMessage::InitializerData {
-                    id: client_id,
-                    cells,
-                    robots,
-                    valuables,
-                });
+                self.send_initializer_data(client_id);
             }
 
             // Wait for remainer of the tick time

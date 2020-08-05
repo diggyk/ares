@@ -4,7 +4,6 @@ use futures::prelude::*;
 use tokio::prelude::*;
 
 use futures::channel::mpsc::UnboundedSender;
-use serde::Serialize;
 use serde_json;
 use std::collections::HashMap;
 use std::sync::{
@@ -60,9 +59,6 @@ impl WebsocketServer {
         };
 
         if let Ok(msg_json) = serde_json::to_string(&msg) {
-            if for_client.is_some() {
-                println!("{:?}", msg_json);
-            }
             for (id, mut tx) in clients.read().await.iter() {
                 if for_client.is_some() && *id != for_client.unwrap() {
                     continue;
