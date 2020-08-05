@@ -1,7 +1,7 @@
 use serde::Serialize;
 
 use crate::grid::GridCell;
-use crate::robot::{RobotData, RobotModules};
+use crate::robot::{RobotData, RobotInfo};
 use crate::valuable::Valuable;
 
 /// Broadcast message of updates to the world
@@ -10,8 +10,7 @@ pub enum BroadcastMessage {
     InitializerData {
         id: usize,
         cells: Vec<GridCell>,
-        robots: Vec<RobotData>,
-        robot_modules: Vec<RobotModules>,
+        robots: Vec<RobotInfo>,
         valuables: Vec<Valuable>,
     },
     RobotAttacked {
@@ -22,8 +21,7 @@ pub enum BroadcastMessage {
         robot: RobotData,
     },
     RobotSpawned {
-        robot: RobotData,
-        modules: RobotModules,
+        robot: RobotInfo,
     },
     RobotExploded {
         robot_id: i64,

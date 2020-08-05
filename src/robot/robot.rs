@@ -190,6 +190,13 @@ impl RobotModules {
     }
 }
 
+/// Special struct just for the serializable bits to send to clients
+#[derive(Debug, Serialize)]
+pub struct RobotInfo {
+    data: RobotData,
+    modules: RobotModules,
+}
+
 pub struct Robot {
     pub grid: Arc<Mutex<Grid>>,
     pub data: RobotData,
@@ -201,6 +208,15 @@ pub struct Robot {
     pub movement_queue: Option<Vec<MoveStep>>,
 
     pub modules: RobotModules,
+}
+
+impl From<&Robot> for RobotInfo {
+    fn from(item: &Robot) -> RobotInfo {
+        RobotInfo {
+            data: item.data.clone(),
+            modules: item.modules.clone(),
+        }
+    }
 }
 
 impl Robot {

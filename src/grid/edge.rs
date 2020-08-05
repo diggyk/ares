@@ -2,12 +2,14 @@ use diesel::backend::Backend;
 use diesel::deserialize::{FromSql, Result};
 use diesel::serialize::{self, Output, ToSql};
 use diesel::sql_types::*;
-use serde::Serialize;
+use serde_repr;
 use std::io::Write;
 
-#[repr(i16)]
-#[derive(Copy, Clone, Debug, PartialEq, Eq, AsExpression, FromSqlRow, Serialize)]
+#[derive(
+    Copy, Clone, Debug, PartialEq, Eq, AsExpression, FromSqlRow, serde_repr::Serialize_repr,
+)]
 #[sql_type = "SmallInt"]
+#[repr(i16)]
 pub enum EdgeType {
     Open = 0,
     Wall = 1,

@@ -4,6 +4,7 @@ use futures::prelude::*;
 use tokio::prelude::*;
 
 use futures::channel::mpsc::UnboundedSender;
+use serde::Serialize;
 use serde_json;
 use std::collections::HashMap;
 use std::sync::{
@@ -23,7 +24,11 @@ static NEXT_ID: AtomicUsize = AtomicUsize::new(1);
 
 /// Active clients
 type Clients = Arc<RwLock<HashMap<usize, UnboundedSender<Result<Message, Error>>>>>;
+
+/// MPSC receiver from the server
 type StandardReceiver = Arc<Mutex<std::sync::mpsc::Receiver<BroadcastMessage>>>;
+
+/// MPSC transmitter to the server
 type StandardSender = Arc<Mutex<std::sync::mpsc::Sender<usize>>>;
 
 pub struct WebsocketServer {
@@ -49,13 +54,15 @@ impl WebsocketServer {
                 id,
                 cells: _,
                 robots: _,
-                robot_modules: _,
                 valuables: _,
             } => Some(id),
             _ => None,
         };
 
         if let Ok(msg_json) = serde_json::to_string(&msg) {
+            if for_client.is_some() {
+                println!("{:?}", msg_json);
+            }
             for (id, mut tx) in clients.read().await.iter() {
                 if for_client.is_some() && *id != for_client.unwrap() {
                     continue;

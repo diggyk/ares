@@ -9,7 +9,7 @@ use super::broadcast::BroadcastMessage;
 use super::*;
 use crate::grid::{Coords, Dir, Grid, GridCell};
 use crate::robot::modules::*;
-use crate::robot::{Robot, RobotData, RobotModules};
+use crate::robot::{Robot, RobotData, RobotInfo, RobotModules};
 use crate::utils;
 use crate::valuable::*;
 
@@ -401,8 +401,9 @@ impl Server {
 
             self.destroy_depleted_valuables();
 
-            if let Ok(client_id) = self.in_rx.try_recv() {
-                println!("Message from webserver: {:?}", client_id);
+            // Send initializer data to all new clients
+            while let Ok(client_id) = self.in_rx.try_recv() {
+                println!("Send initial data to Listener {:?}", client_id);
                 let cells: Vec<GridCell> = self
                     .grid
                     .lock()
@@ -411,16 +412,13 @@ impl Server {
                     .values()
                     .map(|g| g.clone())
                     .collect();
-                let robots: Vec<RobotData> = self.robots.values().map(|r| r.data.clone()).collect();
-                let robot_modules: Vec<RobotModules> =
-                    self.robots.values().map(|r| r.modules.clone()).collect();
+                let robots: Vec<RobotInfo> = self.robots.values().map(|r| r.into()).collect();
                 let valuables: Vec<Valuable> = self.valuables.values().map(|v| v.clone()).collect();
 
                 let _ = self.out_tx.send(BroadcastMessage::InitializerData {
                     id: client_id,
                     cells,
                     robots,
-                    robot_modules,
                     valuables,
                 });
             }
